@@ -1,7 +1,22 @@
-package goecs
+package main
 
-import "fmt"
+import (
+  "github.com/phdavis1027/goecs/generational"
+  "fmt"
+)
 
 func main() {
-  fmt.Println("Hello, World!")
-}
+  genAlloc := generational.CreateGenAllocatorOfSize(10)
+  healthComponent := generational.CreateGenArrayOfSize[int](10)
+
+
+  healthComponent.Set(genIndex, 100)
+
+
+  value, err := healthComponent.Get(genIndex)
+  if err != nil {
+    fmt.Println(err)
+  } else {
+    fmt.Println(*value)
+  }
+} 

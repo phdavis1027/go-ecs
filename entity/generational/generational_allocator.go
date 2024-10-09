@@ -1,4 +1,4 @@
-package goecs
+package generational 
 
 import (
 	"errors"
@@ -7,14 +7,13 @@ import (
 
 type GenAllocatorEntry struct {
   // The generation of the entry.
-  Generation     int 
-
-  IsLive         bool
+  Generation     int `json:"generation"`
+  IsLive         bool `json:"isLive"`
 }
 
 type GenAllocator struct {
-  FreeList    []int
-  Entries     []GenAllocatorEntry
+  FreeList    []int               `json:"freeList"`
+  Entries     []GenAllocatorEntry `json:"entries"`
 }
 
 func CreateGenAllocatorOfSize(size int) GenAllocator {

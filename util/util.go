@@ -1,6 +1,6 @@
-package goecs
+package util
 
 type Optional[T any] struct {
-  Val         T
+  Inner       T
   IsSome      bool
 }
