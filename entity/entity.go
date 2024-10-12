@@ -35,7 +35,7 @@ func CreateEcsOfCapacity(capacity int) *ECS {
   return ecs
 }
 
-func (ecs *ECS) CreateEntity() (Entity, error) {
+func (ecs *ECS) createEntity() (Entity, error) {
   genIndex := ecs.genAlloc.Allocate()
 
   // A poor man's typecast
@@ -51,11 +51,6 @@ func (ecs *ECS) CreateEntity() (Entity, error) {
 // by game-logic code. It should only be called
 // by the game engine for cleaning up specific types of entities.
 // Otherwise, we risk leaving orphan components.
-func (ecs *ECS) DestroyEntity(entity Entity) error {
-  n := ecs.entities
-
-    if (entity.Index >) 
-}
 
 func (ecs *ECS) AddHealthComponent(entity Entity, initialValue int) error {
   if (entity.Index >= ecs.capacity) {
