@@ -1,7 +1,7 @@
 package entity
 
 import (
-	"errors"
+  "errors"
 	"fmt"
 
 	"github.com/phdavis1027/goecs/entity/generational"
@@ -47,11 +47,17 @@ func (ecs *ECS) CreateEntity() (Entity, error) {
   return entity, nil
 }
 
-type UnderConstructionECS struct {
-  inner     ECS
+// NOTE: This should never be called directly
+// by game-logic code. It should only be called
+// by the game engine for cleaning up specific types of entities.
+// Otherwise, we risk leaving orphan components.
+func (ecs *ECS) DestroyEntity(entity Entity) error {
+  n := ecs.entities
+
+    if (entity.Index >) 
 }
 
-func (ecs *UnderConstructionECS) AddHealthComponent(entity Entity, initialValue int) error {
+func (ecs *ECS) AddHealthComponent(entity Entity, initialValue int) error {
   if (entity.Index >= ecs.capacity) {
     fmtString := "Entity index %d is out of bounds for ECS of capacity %d"
     errorMsg := fmt.Sprintf(fmtString, entity.Index, ecs.capacity)
@@ -59,11 +65,10 @@ func (ecs *UnderConstructionECS) AddHealthComponent(entity Entity, initialValue 
     return errors.New(errorMsg)
   }
 
-
   if (ecs.healthComponent[entity.Index].Val.IsSome) {
     fmtString := "Attempt to add a healthComponent to an entity `a`, but that healthComponent" 
     fmtString += "is already claimed by another entity. Found healthComponent: [%s]" 
-    errorMsg  := fmt.Sprintf(fmtString, entity, ecs.inner.healthComponent[entity.Index])
+    errorMsg  := fmt.Sprintf(fmtString, entity, ecs.healthComponent[entity.Index])
 
     return errors.New(errorMsg)
   }
@@ -71,6 +76,7 @@ func (ecs *UnderConstructionECS) AddHealthComponent(entity Entity, initialValue 
 
   ecs.healthComponent[entity.Index].Val.IsSome = true
   ecs.healthComponent[entity.Index].Val.Inner  = initialValue
+  ecs.healthComponent[entity.Index].Generation = entity.Generation
 
-  if (entity.Generation )
+  return nil
 }
