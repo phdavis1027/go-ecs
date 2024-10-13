@@ -39,9 +39,12 @@ func (arr *ArrayContainer) InsertOne(n uint16) error {
 
   neededCap := arr.expandHowMuch(1)
 
-  insertionPoint, error := arr.binarySearch(n)
-  if error != nil {
-    return error
+  insertionPoint, present := arr.binarySearch(n)
+  if present {
+    fmtString := "Attempt to insert [%d] into ArrayContainer which already contains it"
+    errorMsg := fmt.Sprintf(fmtString, n)
+
+    return errors.New(errorMsg)
   }
 
   if (neededCap == 0) {
@@ -82,7 +85,13 @@ func (arr *ArrayContainer) expandHowMuch(numNewElements int) int {
   return newCapacity
 }
 
-func (arr *ArrayContainer) binarySearch(n uint16) (int, error) {
+func (arr *ArrayContainer) Has(n uint16) bool {
+  _, present := arr.binarySearch(n)
+
+  return present
+}
+
+func (arr *ArrayContainer) binarySearch(n uint16) (int, bool) {
   high := len(arr.data) - 1
   low  := 0
 
@@ -97,12 +106,9 @@ func (arr *ArrayContainer) binarySearch(n uint16) (int, error) {
     } else if (check > n) {
       high = mid - 1
     } else {
-      formatString := "Attempt to insert duplicate element [%d] into ArrayContainer"
-      errorMsg := fmt.Sprintf(formatString, n)
-
-      return -1, errors.New(errorMsg)
+      return mid, true
     }
   }
 
-  return mid, nil
+  return mid, false 
 }

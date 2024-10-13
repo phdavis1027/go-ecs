@@ -30,7 +30,7 @@ func (bc *BitsetContainer) InsertOne(n uint16) error {
   return nil
 }
 
-func (bc *BitsetContainer) IsIn(n uint16) bool {
+func (bc *BitsetContainer) Has(n uint16) bool {
   // index is floor(n / 1024)
   bucket := bc.data[n >> 10]
   n %= 64
