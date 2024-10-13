@@ -1,73 +1,108 @@
 package roaring
+
 import (
 	"errors"
 	"fmt"
+	"slices"
 )
 
 const MAX_KEYS int = 4096
 
-type DynamicArray[T any] struct {
-  data      []T
+type ArrayContainer struct {
+  data      []uint16
 }
 
-func NewDynamicArrayWithCapacity[T any] (capacity int) DynamicArray[T] {
-  return DynamicArray[T] {
-    data:  make([]T, 0, capacity),
+func NewArrayContainerWithCapacity (capacity int) ArrayContainer {
+  return ArrayContainer {
+    data:  make([]uint16, 0, capacity),
   };
 }
 
-func (dua *DynamicArray[T]) Get(i int) (T, error) {
-  if (i < 0 || i >= len(dua.data)) {
-    fmtString := "Attempt to get out-of-range index [%d] for DynamicArray with length %d"
-    errorMsg  := fmt.Sprintf(fmtString, i, len(dua.data))
+func (arr *ArrayContainer) Get(i int) (uint16, error) {
+  if (i < 0 || i >= len(arr.data)) {
+    fmtString := "Attempt to get out-of-range index [%d] for ArrayContainer with length %d"
+    errorMsg  := fmt.Sprintf(fmtString, i, len(arr.data))
     
-    return *new(T), errors.New(errorMsg)
+    return 0xDEAD, errors.New(errorMsg)
   }
 
-  return dua.data[i], nil
+  return arr.data[i], nil
 }
 
+func (arr *ArrayContainer) InsertOne(n uint16) error {
+  if len(arr.data) == MAX_KEYS {
+    fmtString := "Attempt to insert [%d] into ArrayContainer which already has size 4096"
+    errorMsg := fmt.Sprintf(fmtString, n)
 
-func (dua *DynamicArray[T]) Insert(n T) error {
-  if (len(dua.data) >= MAX_KEYS) {
-    fmtString := "Attempt to insert key [%d] when array already has max size (4096)"
-    errorMSg  := fmt.Sprintf(fmtString, n)
-
-    return errors.New(errorMSg)
-  } 
-
-  if (len(dua.data) == cap(dua.data)) {
-    dua.expandAndInsert(n)
+    return errors.New(errorMsg)
   }
 
-  dua.data = append(dua.data, n)
+  neededCap := arr.expandHowMuch(1)
 
-  return nil
-}
+  insertionPoint, error := arr.binarySearch(n)
+  if error != nil {
+    return error
+  }
 
-// Assumes new length won't exceed 4096,
-// maybe add more proof of that if we ever introduce
-// a callstie besides the one in DynamicArray.Insert 
-func (dua *DynamicArray[T]) expandAndInsert(n T) {
-  newCap := 0
+  if (neededCap == 0) {
+    slices.Insert(arr.data, insertionPoint, n) 
 
-  oldCap := cap(dua.data)
-
-  if (cap(dua.data) < 64) {
-    newCap = oldCap * 2  
-  } else if (oldCap < 1067) {
-    newCap = oldCap + ( oldCap >> 1 ) // newCap = oldCap * 1.5
-  } else if (oldCap > 3840) {
-    newCap = MAX_KEYS 
+    return nil
   } else {
-    newCap = oldCap * ( oldCap >> 2 ) // newCap = oldCap + 1.25
+    newData := make([]uint16, len(arr.data) + 1, neededCap)
+
+    copy(newData, arr.data[:insertionPoint])
+    newData[insertionPoint] = n
+    copy(newData[insertionPoint+1:], arr.data[insertionPoint+1:len(arr.data)])
+
+    return nil
+  }
+}
+
+func (arr *ArrayContainer) expandHowMuch(numNewElements int) int {
+  newSize    :=  len(arr.data) + numNewElements
+  capacity   :=  cap(arr.data)
+  mustExpand :=  newSize > capacity 
+
+  if (!mustExpand) {
+    return 0 
   }
 
-  newCap = min(newCap, MAX_KEYS)
+  var newCapacity int
+  if (capacity < 64) {
+    newCapacity = capacity * 2
+  } else if (capacity < 1067) {
+    newCapacity = capacity + (capacity >> 1)
+  } else if (capacity <= 3840) {
+    newCapacity = capacity + (capacity >> 2)
+  } else {
+    newCapacity = MAX_KEYS
+  }
 
-  newData := make([]T, len(dua.data) + 1, newCap)
+  return newCapacity
+}
 
-  copy(newData, dua.data)
+func (arr *ArrayContainer) binarySearch(n uint16) (int, error) {
+  high := len(arr.data) - 1
+  low  := 0
 
-  newData[len(dua.data)] = n
+  var mid int
+
+  for low <= high {
+    mid := (high + low) >> 1
+
+    check := arr.data[mid]
+    if (check < n) {
+      low = mid + 1
+    } else if (check > n) {
+      high = mid - 1
+    } else {
+      formatString := "Attempt to insert duplicate element [%d] into ArrayContainer"
+      errorMsg := fmt.Sprintf(formatString, n)
+
+      return -1, errors.New(errorMsg)
+    }
+  }
+
+  return mid, nil
 }
