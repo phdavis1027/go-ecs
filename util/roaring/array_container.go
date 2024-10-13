@@ -19,6 +19,12 @@ func NewArrayContainerWithCapacity(capacity int) ArrayContainer {
 	}
 }
 
+func NewArrayContainerWithLength(length int) ArrayContainer {
+  return ArrayContainer {
+    data: make([]uint16, length),
+  }
+}
+
 // INSTANCE METHODS
 
 func (arr *ArrayContainer) Cardinality() int {

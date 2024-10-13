@@ -1,8 +1,10 @@
 package roaring
 
 import (
+	"bits"
 	"errors"
 	"fmt"
+	"math/bits"
 )
 
 type BitsetContainer struct {
@@ -48,16 +50,38 @@ func (bc *BitsetContainer) Cardinality() int {
 	return bc.cardinality
 }
 
+func (bc *BitsetContainer) AndArrayToArray() ArrayContainer {
+
+}
+
+func (bc *BitsetContainer) AndArrayToBitmap() BitsetContainer {
+
+}
+
+// NOTE: This is only used for the case where adding or removing
+// an element from a bitset container would cause it to become
+// an array container. For computing set operations, we can do 
+// better by computing the result on the fly.
+// This is Algorithm 2 in "Better bitmap performance with Roaring bitmaps"
+// by Chambi et al.
 func (bc *BitsetContainer) IntoArrayContainer() ArrayContainer {
 	// Start out with higher capacity, since we know there
 	// are likely a lot of elements
-	arr := NewArrayContainerWithCapacity(4096)
+	arr := NewArrayContainerWithLength(bc.cardinality)
 
-	for bc.cardinality != 0 {
+  offset := 0
+  numAdded := 0
+  for bucket := range bc.data {
+    for bucket != 0 {
+      temp := bucket & (^bucket + 1) 
+      arr.data[numAdded] = (offset << 6) + bits.TrailingZeros16(temp - 1)
+      numAdded++
+      bucket &= bucket - 1
+    }
+    
+    offset++
+  }
 
-	}
+  return arr
 }
 
-func (bc *BitsetContainer) AndWithBitset(other BitsetContainer) {
-
-}
