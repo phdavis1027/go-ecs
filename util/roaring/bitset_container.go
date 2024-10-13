@@ -23,6 +23,8 @@ func (bc *BitsetContainer) InsertOne(n uint16) error {
 
     return errors.New(errorMsg)
   }
+
+  bc.cardinality++
   
   res := mask | bucket
   bc.data[n >> 10] = res
@@ -41,3 +43,8 @@ func (bc *BitsetContainer) Has(n uint16) bool {
 
   return res == 1
 }
+
+func (bc *BitsetContainer) Cardinality() int {
+  return bc.cardinality
+}
+

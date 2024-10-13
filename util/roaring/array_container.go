@@ -12,10 +12,18 @@ type ArrayContainer struct {
   data      []uint16
 }
 
+
+// CLASS METHODS
 func NewArrayContainerWithCapacity (capacity int) ArrayContainer {
   return ArrayContainer {
     data:  make([]uint16, 0, capacity),
   };
+}
+
+// INSTANCE METHODS 
+
+func (arr *ArrayContainer) Cardinality() int {
+  return len(arr.data)
 }
 
 func (arr *ArrayContainer) Get(i int) (uint16, error) {

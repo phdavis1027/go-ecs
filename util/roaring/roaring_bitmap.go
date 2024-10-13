@@ -16,7 +16,7 @@ type RoaringBitset struct {
    bitset_vals       []BitsetContainer
 }
 
-func (r *RoaringBitset) Add(value int32) error {
+func (r *RoaringBitset) InsertOne(value int32) error {
   least := leastSignificantBits16(uint32(value)) 
   most  := mostSignificantBits16(uint32(value))
 
@@ -63,6 +63,9 @@ func (r *RoaringBitset) Add(value int32) error {
 
   if (whichContainer == ARRAY_MASK) {
     arr    := r.array_vals[realIndex]
+
+    if ()
+
   } else if (whichContainer == BITSET_MASK) {
     bitset := r.bitset_vals[realIndex]
   } else {
