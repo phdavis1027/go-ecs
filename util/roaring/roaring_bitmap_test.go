@@ -40,3 +40,11 @@ func TestRoaringBitmap(t *testing.T) {
     }
   }
 }
+
+func BenchmarkRoaringBitmapInsert(b *testing.B) {
+  r := NewRoaringBitset()
+
+  for i := 0; i < b.N; i++ {
+    r.InsertOne(int32(i))
+  }
+}
