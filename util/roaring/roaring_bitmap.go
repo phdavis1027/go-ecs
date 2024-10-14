@@ -1,7 +1,6 @@
 package roaring
 
 import (
-	"errors"
 	"fmt"
 	"slices"
 )
@@ -10,76 +9,100 @@ const ARRAY_MASK int = 0x0FFF0000
 const BITSET_MASK int = 0x0EEE0000
 
 type RoaringBitset struct {
-	array_keys []uint16
-	array_vals []ArrayContainer
+	arrayKeys []uint16
+	arrayVals []ArrayContainer
 
-	bitset_keys []uint16
-	bitset_vals []BitsetContainer
+	bitsetKeys []uint16
+	bitsetVals []BitsetContainer
+}
+
+// CLASS METHODS
+func NewRoaringBitset() RoaringBitset {
+  return RoaringBitset{
+    arrayKeys: make([]uint16, 0),
+    arrayVals: make([]ArrayContainer, 0),
+
+    bitsetKeys: make([]uint16, 0),
+    bitsetVals: make([]BitsetContainer, 0),
+  }
 }
 
 func (r *RoaringBitset) InsertOne(value int32) error {
 	least := leastSignificantBits16(uint32(value))
 	most := mostSignificantBits16(uint32(value))
 
-	// Find appropriate container, if exists
-	container_index := -1
-
 	// Check arrays first
-	for index, key := range r.array_keys {
-		if least == key {
-			container_index = index | ARRAY_MASK
-			break
-		}
-	}
+  index, isPresent := slices.BinarySearch(r.arrayKeys, most)
+  if isPresent {
+    //NOTE: Apparently indexing without taking an address 
+    // does an implicit copy
+		arr    := &r.arrayVals[index]
+
+    if arr.Cardinality() >= 4096 {
+      bitset, error := arr.IntoBitset() 
+      if error != nil {
+        return error
+      }
+
+      // Remove the old array
+      r.arrayKeys = slices.Delete(r.arrayKeys, index, index + 1)
+      r.arrayVals = slices.Delete(r.arrayVals, index, index + 1)
+
+      bitset.InsertOne(least)
+
+      insertionPoint, _ := slices.BinarySearch(r.bitsetKeys, most)
+
+      r.bitsetKeys = slices.Insert(r.bitsetKeys, insertionPoint, most)
+      r.bitsetVals = slices.Insert(r.bitsetVals, insertionPoint, bitset)
+
+      return nil
+    } else {
+      return arr.InsertOne(least)
+    }
+  }
 
 	// Next, check bitset containers
-	if container_index == -1 {
-		for index, key := range r.bitset_keys {
-			if least == key {
-				container_index = index | BITSET_MASK
-			}
-
-			break
-		}
-	}
+  index, isPresent = slices.BinarySearch(r.bitsetKeys, most)
+  if isPresent {
+		bitset := &r.bitsetVals[index]
+    return bitset.InsertOne(least)
+  }
 
 	// No appropriate chunk found, gotta make a new container
-	if container_index == -1 {
-		// We always start out a container as an array container
+  // We always start out a container as an array container
+  insertionPoint, _ := slices.BinarySearch(r.arrayKeys, most)
+  r.arrayKeys = slices.Insert(r.arrayKeys, insertionPoint, most)
 
-		insertion_point, _ := slices.BinarySearch(r.array_keys, least)
-		r.array_keys = slices.Insert(r.array_keys, insertion_point, least)
+  arrayContainer := NewArrayContainerWithCapacity(8)
+  error := arrayContainer.InsertOne(least)
+  if error != nil {
+    return error
+  }
 
-		arrayContainer := NewArrayContainerWithCapacity(8)
-		error := arrayContainer.InsertOne(most)
-		if error != nil {
-			return error
-		}
+  r.arrayVals = slices.Insert(r.arrayVals, insertionPoint, arrayContainer)
 
-		r.array_vals = slices.Insert(r.array_vals, insertion_point, arrayContainer)
+  return nil
+}
 
-		return nil
-	}
+func (r *RoaringBitset) Has(n int32) bool {
+  least := leastSignificantBits16(uint32(n))
+  most  := mostSignificantBits16(uint32(n))
 
-	whichContainer := container_index & 0xFFFF0000
-	realIndex := container_index & 0x0000FFFF
+  i, isPresent := slices.BinarySearch(r.arrayKeys, most)
+  if isPresent {
+    return r.arrayVals[i].Has(least)
+  } 
 
-	if whichContainer == ARRAY_MASK {
-		arr    := r.array_vals[realIndex]
+  i, isPresent = slices.BinarySearch(r.bitsetKeys, most)
+  if !isPresent {
+    return false
+  }
 
-	} else if whichContainer == BITSET_MASK {
-		bitset := r.bitset_vals[realIndex]
-	} else {
-		formatString := "Found unexpected container index in RoaringBitset: [%d]"
-		errorMsg := fmt.Sprint(formatString, container_index)
-
-		return errors.New(errorMsg)
-	}
-
-	return nil
+  return r.bitsetVals[i].Has(least)
 }
 
 // UTILITY FUNCTIONS
+// -----------------
 
 func mostSignificantBits16(n uint32) uint16 {
 	// SAFETY: we mask the 16 most significant bits
@@ -89,4 +112,8 @@ func mostSignificantBits16(n uint32) uint16 {
 func leastSignificantBits16(n uint32) uint16 {
 	// SAFETY: we mask the 16 least significant bits
 	return uint16(n & 0x0000FFFF)
+}
+
+func (r *RoaringBitset) String() string {
+  return fmt.Sprintf("RoaringBitset with %d array containers and %d bitset containers", len(r.arrayKeys), len(r.bitsetKeys))
 }

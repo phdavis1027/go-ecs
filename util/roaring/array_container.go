@@ -13,6 +13,8 @@ type ArrayContainer struct {
 }
 
 // CLASS METHODS
+// ----------------
+
 func NewArrayContainerWithCapacity(capacity int) ArrayContainer {
 	return ArrayContainer{
 		data: make([]uint16, 0, capacity),
@@ -26,20 +28,29 @@ func NewArrayContainerWithLength(length int) ArrayContainer {
 }
 
 // INSTANCE METHODS
+// ----------------
+
+func (arr *ArrayContainer) IntoBitset() (BitsetContainer, error) {
+  bitset := NewBitsetContainer()
+
+  for _, n := range arr.data {
+    error := bitset.InsertOne(n)
+    if error != nil {
+      return bitset, error
+    }
+  }
+
+  return bitset, nil
+}
 
 func (arr *ArrayContainer) Cardinality() int {
 	return len(arr.data)
 }
 
-func (arr *ArrayContainer) Get(i int) (uint16, error) {
-	if i < 0 || i >= len(arr.data) {
-		fmtString := "Attempt to get out-of-range index [%d] for ArrayContainer with length %d"
-		errorMsg := fmt.Sprintf(fmtString, i, len(arr.data))
+func (arr *ArrayContainer) Has(n uint16) bool {
+  _, isPresent := slices.BinarySearch(arr.data, n)
 
-		return 0xDEAD, errors.New(errorMsg)
-	}
-
-	return arr.data[i], nil
+  return isPresent
 }
 
 func (arr *ArrayContainer) InsertOne(n uint16) error {
@@ -61,15 +72,14 @@ func (arr *ArrayContainer) InsertOne(n uint16) error {
 	}
 
 	if neededCap == 0 {
-		slices.Insert(arr.data, insertionPoint, n)
+    arr.data = slices.Insert(arr.data, insertionPoint, n)
 
 		return nil
 	} else {
-		newData := make([]uint16, len(arr.data)+1, neededCap)
+		newData := make([]uint16, len(arr.data), neededCap)
+    copy(newData, arr.data)
 
-		copy(newData, arr.data[:insertionPoint])
-		newData[insertionPoint] = n
-		copy(newData[insertionPoint+1:], arr.data[insertionPoint+1:len(arr.data)])
+    arr.data = slices.Insert(newData, insertionPoint, n)
 
 		return nil
 	}
