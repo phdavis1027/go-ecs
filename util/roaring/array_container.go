@@ -96,7 +96,7 @@ func (arr *ArrayContainer) expandHowMuch(numNewElements int) int {
 
 	var newCapacity int
 	if capacity < 64 {
-		newCapacity = capacity * 2
+		newCapacity = capacity << 1
 	} else if capacity < 1067 {
 		newCapacity = capacity + (capacity >> 1)
 	} else if capacity <= 3840 {

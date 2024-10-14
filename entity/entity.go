@@ -4,7 +4,9 @@ import (
   "errors"
 	"fmt"
 
+  // Local libs
 	"github.com/phdavis1027/goecs/entity/generational"
+  "github.com/phdavis1027/goecs/util/roaring"
 )
 
 type Entity generational.GenIndex
@@ -17,7 +19,7 @@ type ECS struct {
   // Add entities here
   healthComponent generational.GenArray[int]
 
-  entities        []Entity
+  entities        roaring.RoaringBitset
 }
 
 // Allocs and owns the memory
@@ -28,7 +30,7 @@ func CreateEcsOfCapacity(capacity int) *ECS {
 
   ecs.healthComponent = generational.CreateGenArrayOfSize[int](capacity)
 
-  ecs.entities = make([]Entity, capacity)
+  ecs.entities = roaring.NewRoaringBitset() 
 
   ecs.capacity = capacity
 
