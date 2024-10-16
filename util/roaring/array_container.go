@@ -9,7 +9,7 @@ import (
 const MAX_KEYS int = 4096
 
 type ArrayContainer struct {
-	data []uint16
+	data []uint32
 }
 
 // CLASS METHODS
@@ -17,13 +17,13 @@ type ArrayContainer struct {
 
 func NewArrayContainerWithCapacity(capacity int) ArrayContainer {
 	return ArrayContainer{
-		data: make([]uint16, 0, capacity),
+		data: make([]uint32, 0, capacity),
 	}
 }
 
 func NewArrayContainerWithLength(length int) ArrayContainer {
   return ArrayContainer {
-    data: make([]uint16, length),
+    data: make([]uint32, length),
   }
 }
 
@@ -47,13 +47,13 @@ func (arr *ArrayContainer) Cardinality() int {
 	return len(arr.data)
 }
 
-func (arr *ArrayContainer) Has(n uint16) bool {
+func (arr *ArrayContainer) Has(n uint32) bool {
   _, isPresent := slices.BinarySearch(arr.data, n)
 
   return isPresent
 }
 
-func (arr *ArrayContainer) InsertOne(n uint16) error {
+func (arr *ArrayContainer) InsertOne(n uint32) error {
 	if len(arr.data) == MAX_KEYS {
 		fmtString := "Attempt to insert [%d] into ArrayContainer which already has size 4096"
 		errorMsg := fmt.Sprintf(fmtString, n)
@@ -76,7 +76,7 @@ func (arr *ArrayContainer) InsertOne(n uint16) error {
 
 		return nil
 	} else {
-		newData := make([]uint16, len(arr.data), neededCap)
+		newData := make([]uint32, len(arr.data), neededCap)
     copy(newData, arr.data)
 
     arr.data = slices.Insert(newData, insertionPoint, n)
@@ -94,6 +94,7 @@ func (arr *ArrayContainer) expandHowMuch(numNewElements int) int {
 		return 0
 	}
 
+  // TODO: Compute what the right values for these cutoffs should be
 	var newCapacity int
 	if capacity < 64 {
 		newCapacity = capacity << 1

@@ -9,7 +9,15 @@ import (
   "github.com/phdavis1027/goecs/util/roaring"
 )
 
-type Entity generational.GenIndex
+type Entity int64 
+
+func (entity Entity) Index() int {
+  return int(entity) & 0x00000000FFFFFFFF
+}
+
+func (entity Entity) Generation() int {
+  return int(entity) >> 32
+}
 
 type ECS struct {
   capacity        int
@@ -41,10 +49,10 @@ func (ecs *ECS) createEntity() (Entity, error) {
   genIndex := ecs.genAlloc.Allocate()
 
   // A poor man's typecast
-  entity := Entity {
-    Index: genIndex.Index, 
-    Generation: genIndex.Generation,
-  }
+
+  entity := Entity(genIndex.Index | (genIndex.Generation << 32))
+
+  ecs.entities.InsertOne(entity)
 
   return entity, nil
 }

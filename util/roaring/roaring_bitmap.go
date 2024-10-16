@@ -5,31 +5,28 @@ import (
 	"slices"
 )
 
-const ARRAY_MASK int = 0x0FFF0000
-const BITSET_MASK int = 0x0EEE0000
-
 type RoaringBitset struct {
-	arrayKeys []uint16
+	arrayKeys []uint32
 	arrayVals []ArrayContainer
 
-	bitsetKeys []uint16
+	bitsetKeys []uint32
 	bitsetVals []BitsetContainer
 }
 
 // CLASS METHODS
 func NewRoaringBitset() RoaringBitset {
   return RoaringBitset{
-    arrayKeys: make([]uint16, 0),
+    arrayKeys: make([]uint32, 0),
     arrayVals: make([]ArrayContainer, 0),
 
-    bitsetKeys: make([]uint16, 0),
+    bitsetKeys: make([]uint32, 0),
     bitsetVals: make([]BitsetContainer, 0),
   }
 }
 
-func (r *RoaringBitset) InsertOne(value int32) error {
-	least := leastSignificantBits16(uint32(value))
-	most := mostSignificantBits16(uint32(value))
+func (r *RoaringBitset) InsertOne(value uint64) error {
+	least := leastSignificantBits32(value)
+	most := mostSignificantBits32(value)
 
 	// Check arrays first
   index, isPresent := slices.BinarySearch(r.arrayKeys, most)
@@ -84,9 +81,9 @@ func (r *RoaringBitset) InsertOne(value int32) error {
   return nil
 }
 
-func (r *RoaringBitset) Has(n int32) bool {
-  least := leastSignificantBits16(uint32(n))
-  most  := mostSignificantBits16(uint32(n))
+func (r *RoaringBitset) Has(n uint64) bool {
+  least := leastSignificantBits32(n)
+  most  := mostSignificantBits32(n)
 
   i, isPresent := slices.BinarySearch(r.arrayKeys, most)
   if isPresent {
@@ -104,14 +101,14 @@ func (r *RoaringBitset) Has(n int32) bool {
 // UTILITY FUNCTIONS
 // -----------------
 
-func mostSignificantBits16(n uint32) uint16 {
+func mostSignificantBits32(n uint64) uint32 {
 	// SAFETY: we mask the 16 most significant bits
-	return uint16((n & 0xFFFF0000) >> 16)
+  return uint32(n >> 32)
 }
 
-func leastSignificantBits16(n uint32) uint16 {
+func leastSignificantBits32(n uint64) uint32 {
 	// SAFETY: we mask the 16 least significant bits
-	return uint16(n & 0x0000FFFF)
+	return uint32(n & 0x00000000FFFFFFFF)
 }
 
 func (r *RoaringBitset) String() string {

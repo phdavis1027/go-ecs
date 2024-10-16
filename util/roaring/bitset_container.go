@@ -7,7 +7,7 @@ import (
 )
 
 type BitsetContainer struct {
-	data        [1024]uint64
+	data        [2048]uint64
 	cardinality int
 }
 
@@ -15,11 +15,14 @@ func NewBitsetContainer() BitsetContainer {
   return BitsetContainer{}
 }
 
-func (bc *BitsetContainer) InsertOne(n uint16) error {
+func (bc *BitsetContainer) InsertOne(n uint32) error {
+  // Neat! Switching to 64 bits doesn't affect this calculation
+  // since it's entirely dependent on "row-length"
   index := n >> 6
 	bucket := bc.data[index]
 	n %= 64
 
+  // I think this should also work unmodified?
 	mask := uint64(1 << n)
 	found := bucket & uint64(mask)
 
@@ -38,7 +41,7 @@ func (bc *BitsetContainer) InsertOne(n uint16) error {
 	return nil
 }
 
-func (bc *BitsetContainer) Has(n uint16) bool {
+func (bc *BitsetContainer) Has(n uint32) bool {
 	// index is floor(n / 64)
 	bucket := bc.data[n>>6]
 	n %= 64
@@ -79,7 +82,7 @@ func (bc *BitsetContainer) IntoArrayContainer() ArrayContainer {
   for bucket := range bc.data {
     for bucket != 0 {
       temp := bucket & (^bucket + 1) 
-      arr.data[numAdded] = uint16(offset << 6) + uint16(bits.TrailingZeros16(uint16(temp - 1)))
+      arr.data[numAdded] = uint32(offset << 6) + uint32(bits.TrailingZeros32(uint32(temp - 1)))
       numAdded++
       bucket &= bucket - 1
     }
