@@ -35,7 +35,8 @@ func (r *RoaringBitset) InsertOne(value uint64) error {
     // does an implicit copy
 		arr    := &r.arrayVals[index]
 
-    if arr.Cardinality() >= 4096 {
+    // MAX_KEYS is a constant defined in array_container.go
+    if arr.Cardinality() >= MAX_KEYS {
       bitset, error := arr.IntoBitset() 
       if error != nil {
         return error
@@ -96,6 +97,41 @@ func (r *RoaringBitset) Has(n uint64) bool {
   }
 
   return r.bitsetVals[i].Has(least)
+}
+
+// In-place modify r to be the intersection into `left`
+func (left *RoaringBitset) IntersectWith(right *RoaringBitset) RoaringBitset {
+  i := 0
+  j := 0
+
+  intersect := NewRoaringBitset()
+
+  for {
+    if i >= len(left.arrayKeys) || j >= len(right.arrayKeys) {
+      break
+    }
+
+    // Compare left arrays with right arrays
+    if left.arrayKeys[i] == right.arrayKeys[j] {
+      leftArray    := left.arrayVals[i]
+      rightArray   := right.arrayVals[i]
+
+      arrayIntserct:=  leftArray.IntersectArray(&rightArray)
+
+      for _, value := range arrayIntserct.data {
+        intersect.InsertOne(uint64(left.arrayKeys[i]) << 32 | uint64(value))
+      }
+
+      i++
+      j++
+    } else if left.arrayKeys[i] < right.arrayKeys[j] {
+      i++
+    } else {
+      j++
+    }
+  }
+
+  return intersect
 }
 
 // UTILITY FUNCTIONS

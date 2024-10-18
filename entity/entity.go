@@ -1,15 +1,18 @@
 package entity
 
 import (
-  "errors"
-	"fmt"
-
   // Local libs
 	"github.com/phdavis1027/goecs/entity/generational"
   "github.com/phdavis1027/goecs/util/roaring"
 )
 
 type Entity int64 
+
+type EntityType uint8 
+const (
+  Human EntityType = iota
+  Orc
+)
 
 func (entity Entity) Index() int {
   return int(entity) & 0x00000000FFFFFFFF
@@ -28,6 +31,12 @@ type ECS struct {
   healthComponent generational.GenArray[int]
 
   entities        roaring.RoaringBitset
+  Systems         []System
+  dirty           bool
+}
+
+func (ecs *ECS) isValidEntry(entity Entity) bool {
+  return ecs.entities.Has(uint64(entity))
 }
 
 // Allocs and owns the memory
@@ -48,11 +57,8 @@ func CreateEcsOfCapacity(capacity int) *ECS {
 func (ecs *ECS) createEntity() (Entity, error) {
   genIndex := ecs.genAlloc.Allocate()
 
-  // A poor man's typecast
-
   entity := Entity(genIndex.Index | (genIndex.Generation << 32))
-
-  ecs.entities.InsertOne(entity)
+  ecs.entities.InsertOne(uint64(entity))
 
   return entity, nil
 }
@@ -62,26 +68,19 @@ func (ecs *ECS) createEntity() (Entity, error) {
 // by the game engine for cleaning up specific types of entities.
 // Otherwise, we risk leaving orphan components.
 
-func (ecs *ECS) AddHealthComponent(entity Entity, initialValue int) error {
-  if (entity.Index >= ecs.capacity) {
-    fmtString := "Entity index %d is out of bounds for ECS of capacity %d"
-    errorMsg := fmt.Sprintf(fmtString, entity.Index, ecs.capacity)
+func (ecs *ECS) CreateEntityOfType(entityType EntityType) (Entity, error) {
+  entity, err := ecs.createEntity()
 
-    return errors.New(errorMsg)
+  if (err != nil) {
+    return entity, err
   }
 
-  if (ecs.healthComponent[entity.Index].Val.IsSome) {
-    fmtString := "Attempt to add a healthComponent to an entity `a`, but that healthComponent" 
-    fmtString += "is already claimed by another entity. Found healthComponent: [%s]" 
-    errorMsg  := fmt.Sprintf(fmtString, entity, ecs.healthComponent[entity.Index])
-
-    return errors.New(errorMsg)
+  for _, system := range ecs.systems {
+    if system.MatchesQuery(entityType) {
+      system.OnEntityCreated(entity, entityType)
+      system.AddEntity(entity)
+    }
   }
 
-
-  ecs.healthComponent[entity.Index].Val.IsSome = true
-  ecs.healthComponent[entity.Index].Val.Inner  = initialValue
-  ecs.healthComponent[entity.Index].Generation = entity.Generation
-
-  return nil
+  return entity, nil
 }

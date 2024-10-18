@@ -4,9 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"text/template/parse"
 )
 
-const MAX_KEYS int = 4096
+const MAX_KEYS int = 4096 * 2
 
 type ArrayContainer struct {
 	data []uint32
@@ -107,4 +108,60 @@ func (arr *ArrayContainer) expandHowMuch(numNewElements int) int {
 	}
 
 	return newCapacity
+}
+ 
+func (left *ArrayContainer) IntersectArray(right *ArrayContainer) ArrayContainer {
+  var intersectMaxSize int 
+
+  if left.Cardinality() < right.Cardinality() {
+    intersectMaxSize = left.Cardinality()
+  } else {
+    intersectMaxSize = right.Cardinality()
+  }
+
+  intersect := NewArrayContainerWithLength(intersectMaxSize)
+  diff := left.Cardinality() - right.Cardinality()
+
+  if diff < 0 {
+    diff = -diff
+  }
+
+  l := 0
+  r := 0
+  if diff > 8 {
+
+    for l < left.Cardinality() && r < right.Cardinality() {
+      if left.data[l] == right.data[r] {
+        intersect.InsertOne(left.data[l])
+      } else if left.data[l] < right.data[r] {
+        l++
+      } else {
+        r++
+      }
+    }
+  } else {
+    // Apparently this is "galloping"
+    var smaller, larger *ArrayContainer
+
+    if left.Cardinality() < right.Cardinality() {
+      smaller = left
+      larger = right
+    } else {
+      smaller = right
+      larger = left
+    }
+
+    si := smaller.Cardinality()
+    li := larger.Cardinality()
+    
+    for si < smaller.Cardinality() && li < larger.Cardinality() {
+      nextAvail := smaller.data[si]
+
+      closest, present := slices.BinarySearch(larger.data, nextAvail)
+
+
+    }
+  }
+
+  return intersect
 }
