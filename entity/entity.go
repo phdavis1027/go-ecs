@@ -70,8 +70,7 @@ func (ecs *ECS) createEntity() (Entity, error) {
 
 func (ecs *ECS) CreateEntityOfType(entityType EntityType) (Entity, error) {
   entity, err := ecs.createEntity()
-
-  if (err != nil) {
+  if err != nil {
     return entity, err
   }
 

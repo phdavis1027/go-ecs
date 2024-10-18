@@ -6,22 +6,32 @@ import (
 
 
 type System struct {
-  query           [4]uint64 // 256 kinds of allowed entity types
-  entities        roaring.RoaringBitset
+  queries         []EntityType // 256 kinds of allowed entity types
+  entities        []roaring.RoaringBitset
   OnEntityCreated func(Entity, EntityType) (*any, error)
-  CustumOnTick    func(roaring.RoaringBitset)
+  CustumOnTick    func([]EntityType, []roaring.RoaringBitset)
 }
 
 func (s *System) AddEntityTypeToQuery(et EntityType) {
-  s.query[et/64] |= 1 << (et % 64)
+  s.queries  = append(s.queries, et)
+  s.entities = append(s.entities, roaring.NewRoaringBitset()) 
 }
 
 func (s *System) MatchesQuery(e EntityType) bool {
-  return (s.query[e/64] & (1 << (e % 64))) != 0
+  for _, et := range s.queries {
+    if et == e {
+      return true
+    }
+  }
+  return false
 }
 
-func (s *System) AddEntity(e Entity) {
-  s.entities.InsertOne(uint64(e))
+func (s *System) AddEntity(e Entity, et EntityType) {
+  for i, query := range s.queries {
+    if query == et {
+      s.entities[i].InsertOne(uint64(e))
+    }
+  }
 }
 
 func (s *System) OnTick(ecs *ECS) {
@@ -29,10 +39,12 @@ func (s *System) OnTick(ecs *ECS) {
     // We only ever have to delete entities from the system
     // to keep ourselves from getting out of sync with the ECS
     // since when we add entities we always add them to the matching systems
-    ecs.entities.IntersectWith(&s.entities)
+    for i, r := range s.entities {
+      s.entities[i] = r.IntersectWith(&ecs.entities)
+    }
   }
 
   if s.OnTick != nil {
-    s.CustumOnTick(s.entities)
+    s.CustumOnTick(s.queries, s.entities)
   }
 }
