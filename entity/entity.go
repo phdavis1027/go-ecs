@@ -30,9 +30,10 @@ type ECS struct {
   // Add entities here
   healthComponent generational.GenArray[int]
 
-  entities        roaring.RoaringBitset
+  entityTypes     []EntityType
+  entities        []roaring.RoaringBitset
   Systems         []System
-  dirty           bool
+  dirtyMap        [256]bool
 }
 
 func (ecs *ECS) isValidEntry(entity Entity) bool {
@@ -54,6 +55,10 @@ func CreateEcsOfCapacity(capacity int) *ECS {
   return ecs
 }
 
+func (ecs *ECS) SetDirty(typ EntityType, dirty bool) {
+  ecs.dirtyMap[typ] = dirty 
+}
+
 func (ecs *ECS) createEntity() (Entity, error) {
   genIndex := ecs.genAlloc.Allocate()
 
@@ -61,6 +66,18 @@ func (ecs *ECS) createEntity() (Entity, error) {
   ecs.entities.InsertOne(uint64(entity))
 
   return entity, nil
+}
+
+// WARNING: Doesn't work, just written out to convince myself that 
+// the `dirty` logic is sane
+func (ecs *ECS) DestroyEntity(entity Entity, entityType EntityType) {
+  if !ecs.isValidEntry(entity) {
+    return
+  }
+
+  ecs.entities.DeleteOne(uint64(entity))
+  ecs.genAlloc.Deallocate(entity.Index())
+  ecs.dirtyMap[entityType] = true 
 }
 
 // NOTE: This should never be called directly
@@ -76,8 +93,8 @@ func (ecs *ECS) CreateEntityOfType(entityType EntityType) (Entity, error) {
 
   for _, system := range ecs.Systems {
     if system.MatchesQuery(entityType) {
-      system.OnEntityCreated(entity, entityType)
-      system.AddEntity(entity)
+      system.OnEntityCreated(ecs, entity, entityType)
+      system.AddEntity(entity, entityType)
     }
   }
 

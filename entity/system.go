@@ -8,8 +8,11 @@ import (
 type System struct {
   queries         []EntityType // 256 kinds of allowed entity types
   entities        []roaring.RoaringBitset
-  OnEntityCreated func(Entity, EntityType) (*any, error)
-  CustumOnTick    func([]EntityType, []roaring.RoaringBitset)
+  OnEntityCreated func(*ECS, Entity, EntityType) (*any, error)
+  // NOTE: Here is a list of functions that it is safe to call from CustumOnTick
+  // - ecs.DestroyEntity 
+  // - ecs.CreateEntity
+  CustumOnTick    func(*ECS, []EntityType, []roaring.RoaringBitset)
 }
 
 func (s *System) AddEntityTypeToQuery(et EntityType) {
@@ -18,6 +21,8 @@ func (s *System) AddEntityTypeToQuery(et EntityType) {
 }
 
 func (s *System) MatchesQuery(e EntityType) bool {
+  // NOTE: Brute-force, but I don't expect there 
+  // to more than a couple of queries per system
   for _, et := range s.queries {
     if et == e {
       return true
@@ -35,16 +40,13 @@ func (s *System) AddEntity(e Entity, et EntityType) {
 }
 
 func (s *System) OnTick(ecs *ECS) {
-  if (ecs.dirty) {
-    // We only ever have to delete entities from the system
-    // to keep ourselves from getting out of sync with the ECS
-    // since when we add entities we always add them to the matching systems
-    for i, r := range s.entities {
-      s.entities[i] = r.IntersectWith(&ecs.entities)
+  for i, et := range s.queries {
+    if (ecs.dirtyMap[et]) {
+      s.entities[i] = ecs.GetEntitiesByType(et)
     }
   }
 
   if s.OnTick != nil {
-    s.CustumOnTick(s.queries, s.entities)
+    s.CustumOnTick(ecs, s.queries, s.entities)
   }
 }

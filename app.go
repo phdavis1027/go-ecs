@@ -29,4 +29,7 @@ func (app *App) Run() {
     // SAFETY: OnTick is read-only w/r/t the ECS 
     system.OnTick(app.ecs) 
   }
+  // WARNING: Can only be called after all systems have run
+  // and resynced
+  app.ecs.SetNotDirty() 
 }
