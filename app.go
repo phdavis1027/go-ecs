@@ -22,13 +22,11 @@ func NewApp(name string, ecsCap int) *App {
 }
 
 func (app *App) Run() {
-  log.Println("Running app")
-
   app.logger.Printf("Running app %s\n", app.name)
 
   app.logger.Println("Running attached Systems")
   for _, system := range app.ecs.Systems {
-    // SAFETY: OnTock is only ever read-only w/r/t the ECS 
+    // SAFETY: OnTick is read-only w/r/t the ECS 
     system.OnTick(app.ecs) 
   }
 }

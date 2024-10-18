@@ -26,7 +26,7 @@ func (bc *BitsetContainer) InsertOne(n uint32) error {
 	mask := uint64(1 << n)
 	found := bucket & uint64(mask)
 
-	if found>>n == 1 {
+	if found == 1 {
 		formatString := "Attempt to insert value [%d] to a BitsetContainer already containing it"
 		errorMsg := fmt.Sprintf(formatString, n)
 
@@ -93,3 +93,51 @@ func (bc *BitsetContainer) IntoArrayContainer() ArrayContainer {
   return arr
 }
 
+func (bc *BitsetContainer) RemoveOne(n uint32) error {
+  index := n >> 6
+  bucket := bc.data[index]
+  n %= 64
+
+  mask := uint64(1 << n)
+  found := bucket & uint64(mask)
+
+  if found == 0 {
+    formatString := "Attempt to remove value [%d] from a BitsetContainer not containing it"
+    errorMsg := fmt.Sprintf(formatString, n)
+
+    return errors.New(errorMsg)
+  }
+
+  bc.cardinality--
+
+  res := bucket & (^mask)
+  bc.data[index] = res
+
+  return nil
+}
+
+func (left *BitsetContainer) IntserectWithBitsetToArray(right *BitsetContainer, resultCardinality int) ArrayContainer {
+  arr := NewArrayContainerWithLength(resultCardinality) 
+
+  numAdded := 0
+  offset := 0  
+  for offset < len(left.data) {
+    bucket := left.data[offset] & right.data[offset]
+
+    for bucket != 0 {
+      temp := bucket & (^bucket + 1) 
+      item := uint32(offset << 6) + uint32(bits.TrailingZeros32(uint32(temp - 1)))
+
+      if (right.Has(item)) {
+        arr.data[numAdded] = item
+        numAdded++
+      }
+
+      bucket &= bucket - 1
+    }
+    
+    offset++
+  }
+
+  return arr
+}

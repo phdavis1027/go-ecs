@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"text/template/parse"
 )
 
 const MAX_KEYS int = 4096 * 2
