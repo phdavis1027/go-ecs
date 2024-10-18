@@ -6,8 +6,8 @@ import (
 
 
 type System struct {
-  query    [4]uint64 // 256 kinds of allowed entity types
-  entities roaring.RoaringBitset
+  query           [4]uint64 // 256 kinds of allowed entity types
+  entities        roaring.RoaringBitset
   OnEntityCreated func(Entity, EntityType) (*any, error)
   CustumOnTick    func(roaring.RoaringBitset)
 }
@@ -29,7 +29,7 @@ func (s *System) OnTick(ecs *ECS) {
     // We only ever have to delete entities from the system
     // to keep ourselves from getting out of sync with the ECS
     // since when we add entities we always add them to the matching systems
-    ecs.entities.IntersectWith(s.entities)
+    ecs.entities.IntersectWith(&s.entities)
   }
 
   if s.OnTick != nil {

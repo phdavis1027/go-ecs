@@ -75,7 +75,7 @@ func (ecs *ECS) CreateEntityOfType(entityType EntityType) (Entity, error) {
     return entity, err
   }
 
-  for _, system := range ecs.systems {
+  for _, system := range ecs.Systems {
     if system.MatchesQuery(entityType) {
       system.OnEntityCreated(entity, entityType)
       system.AddEntity(entity)
