@@ -114,8 +114,8 @@ func (left *ArrayContainer) IntersectArray(right *ArrayContainer) ArrayContainer
 
   if left.Cardinality() < right.Cardinality() {
     intersectMaxSize = left.Cardinality()
-  } else {
     intersectMaxSize = right.Cardinality()
+  } else {
   }
 
   intersect := NewArrayContainerWithLength(intersectMaxSize)
@@ -127,8 +127,7 @@ func (left *ArrayContainer) IntersectArray(right *ArrayContainer) ArrayContainer
 
   l := 0
   r := 0
-  if diff > 8 {
-
+  if diff < 64 {
     for l < left.Cardinality() && r < right.Cardinality() {
       if left.data[l] == right.data[r] {
         intersect.InsertOne(left.data[l])
@@ -163,4 +162,23 @@ func (left *ArrayContainer) IntersectArray(right *ArrayContainer) ArrayContainer
   }
 
   return intersect
+}
+
+func (arr *ArrayContainer) IntersectBitset(bitset *BitsetContainer) ArrayContainer {
+  var maxIntersectCap int
+  if (arr.Cardinality() > bitset.Cardinality()) {
+    maxIntersectCap = arr.Cardinality()
+  } else {
+    maxIntersectCap = bitset.Cardinality()
+  }
+
+  newArr := NewArrayContainerWithCapacity(maxIntersectCap)
+
+  for _, v := range arr.data {
+    if bitset.Has(v) {
+      newArr.InsertOne(v)
+    }
+  }
+
+  return newArr
 }

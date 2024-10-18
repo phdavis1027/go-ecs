@@ -118,9 +118,10 @@ func (left *RoaringBitset) IntersectWith(right *RoaringBitset) RoaringBitset {
 
       arrayIntserct:=  leftArray.IntersectArray(&rightArray)
 
-      for _, value := range arrayIntserct.data {
-        intersect.InsertOne(uint64(left.arrayKeys[i]) << 32 | uint64(value))
-      }
+      insertionPoint, _ := slices.BinarySearch(intersect.arrayKeys, left.arrayKeys[i])
+
+      intersect.arrayKeys = slices.Insert(intersect.arrayKeys, insertionPoint, left.arrayKeys[i])
+      intersect.arrayVals = slices.Insert(intersect.arrayVals, insertionPoint, arrayIntserct)
 
       i++
       j++
@@ -130,6 +131,38 @@ func (left *RoaringBitset) IntersectWith(right *RoaringBitset) RoaringBitset {
       j++
     }
   }
+
+  i = 0
+  j = 0
+  // Compare left arrays with right bitsets
+  for {
+    if i >= len(left.arrayKeys) || j >= len(right.bitsetKeys) {
+      break
+    }
+
+    if left.arrayKeys[i] == right.bitsetKeys[j] {
+      arr := left.arrayVals[i]
+      bitset := right.bitsetVals[j]
+
+
+      arrayIntserct := arr.IntersectBitset(&bitset)
+
+      insertionPoint, _ := slices.BinarySearch(intersect.arrayKeys, left.arrayKeys[i])
+
+      intersect.arrayKeys = slices.Insert(intersect.arrayKeys, insertionPoint, left.arrayKeys[i])
+      intersect.arrayVals = slices.Insert(intersect.arrayVals, insertionPoint, arrayIntserct)
+
+      i++
+      j++
+    } else if left.arrayKeys[i] < right.bitsetKeys[j] {
+      i++
+    } else {
+      j++
+    }
+  }
+
+  i = 0
+  j = 0
 
   return intersect
 }

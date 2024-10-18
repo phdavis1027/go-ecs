@@ -141,3 +141,14 @@ func (left *BitsetContainer) IntserectWithBitsetToArray(right *BitsetContainer, 
 
   return arr
 }
+
+func (left *BitsetContainer) IntserectWithBitsetToBitset(right *BitsetContainer) BitsetContainer {
+  new := NewBitsetContainer()
+
+  for i := range 1024 {
+    new.data[i] = left.data[i] & right.data[i] 
+    new.cardinality += bits.OnesCount64(new.data[i])
+  }
+
+  return new
+}
