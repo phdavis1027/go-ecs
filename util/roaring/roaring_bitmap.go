@@ -163,6 +163,65 @@ func (left *RoaringBitset) IntersectWith(right *RoaringBitset) RoaringBitset {
 
   i = 0
   j = 0
+  
+  // Compare left bitsets with right arrays
+  for {
+    if i >= len(left.bitsetKeys) || j >= len(right.arrayKeys) {
+      break
+    }
+
+    if left.bitsetKeys[i] == right.arrayKeys[j] {
+      bitset := left.bitsetVals[i]
+      arr := right.arrayVals[j]
+
+      arrayIntserct := arr.IntersectBitset(&bitset)
+
+      insertionPoint, _ := slices.BinarySearch(intersect.arrayKeys, right.arrayKeys[j])
+
+      intersect.arrayKeys = slices.Insert(intersect.arrayKeys, insertionPoint, right.arrayKeys[j])
+      intersect.arrayVals = slices.Insert(intersect.arrayVals, insertionPoint, arrayIntserct)
+
+      i++
+      j++
+    } else if left.bitsetKeys[i] < right.arrayKeys[j] {
+      i++
+    } else {
+      j++
+    }
+  }
+
+  for {
+    if i >= len(left.bitsetKeys) || j >= len(right.bitsetKeys) {
+      break
+    }
+
+    if left.bitsetKeys[i] == right.bitsetKeys[j] {
+      leftBitset := left.bitsetVals[i]
+      rightBitset := right.bitsetVals[j]
+
+      intersectCardinality := leftBitset.ComputeIntersectCardinality(&rightBitset)
+
+      if (intersectCardinality) > 8192 {
+        bitsetIntersect := leftBitset.IntserectWithBitsetToBitset(&rightBitset)
+    
+        insertionPoint, _ := slices.BinarySearch(intersect.bitsetKeys, right.bitsetKeys[i])
+
+        intersect.bitsetKeys = slices.Insert(intersect.bitsetKeys, insertionPoint, right.bitsetKeys[j])
+        intersect.bitsetVals = slices.Insert(intersect.bitsetVals, insertionPoint, bitsetIntersect)
+      } else {
+        arrayIntersect := leftBitset.IntserectWithBitsetToArray(&rightBitset, intersectCardinality) 
+
+        insertionPoint, _ := slices.BinarySearch(intersect.arrayKeys, right.arrayKeys[j])
+
+        intersect.arrayKeys = slices.Insert(intersect.arrayKeys, insertionPoint, right.arrayKeys[j])
+        intersect.arrayVals = slices.Insert(intersect.arrayVals, insertionPoint, arrayIntersect)
+      }
+    } else if left.bitsetKeys[i] < right.bitsetKeys[j] {
+      i++
+    } else {
+      j++
+    }
+  }
 
   return intersect
 }

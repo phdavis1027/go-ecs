@@ -42,7 +42,7 @@ func (s *System) AddEntity(e Entity, et EntityType) {
 func (s *System) OnTick(ecs *ECS) {
   for i, et := range s.queries {
     if (ecs.dirtyMap[et]) {
-      s.entities[i] = ecs.GetEntitiesByType(et)
+      s.entities[i] = 
     }
   }
 

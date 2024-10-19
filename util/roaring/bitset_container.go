@@ -152,3 +152,13 @@ func (left *BitsetContainer) IntserectWithBitsetToBitset(right *BitsetContainer)
 
   return new
 }
+
+func (left *BitsetContainer) ComputeIntersectCardinality(right *BitsetContainer) int {
+  card := 0
+
+  for i := 0 ; i < 2048 ; i++ {
+    card += bits.OnesCount64(left.data[i] & right.data[i])
+  }
+
+  return card
+}
