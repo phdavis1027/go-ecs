@@ -149,16 +149,47 @@ func (left *ArrayContainer) IntersectArray(right *ArrayContainer) ArrayContainer
       larger = left
     }
 
-    si := smaller.Cardinality()
-    li := larger.Cardinality()
+    si := 0 
+    li := 0 
     
     for si < smaller.Cardinality() && li < larger.Cardinality() {
-      nextAvail := smaller.data[si]
+      s := smaller.data[si]
+      l := larger.data[li]
 
-      closest, present := slices.BinarySearch(larger.data, nextAvail)
+      var next int
 
+      if (l < s) { // gallop
+        gallop := 1
 
-    }
+        for {
+          next = li + gallop
+
+          if next >= larger.Cardinality() {
+            next = larger.Cardinality() - 1      
+          }
+
+          if larger.data[next] < s {
+            gallop <<= 1
+          } else {
+            break
+          }
+        }
+        
+        insertionPoint, isPresent := slices.BinarySearch(larger.data[li:next+1], si)
+        li = insertionPoint
+        si++
+
+        if isPresent {
+          intersect.InsertOne(s)
+        } 
+      } else if (l == s) {
+        intersect.InsertOne(s)
+
+        si++
+        li++
+      } else {
+        si++
+      }
   }
 
   return intersect
