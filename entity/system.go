@@ -1,6 +1,8 @@
 package entity
 
-import "github.com/RoaringBitmap/roaring/roaring64"
+import (
+	"github.com/RoaringBitmap/roaring/roaring64"
+)
 
 func SystemHash(s *System) string {
 	return s.name
@@ -9,13 +11,14 @@ func SystemHash(s *System) string {
 type System struct {
 	name            string
 	queries         []EntityType
+  entities        []roaring64.Bitmap
 	queriesMut      []EntityType
-	entities        []roaring64.Bitmap
+  entitiesMut        []roaring64.Bitmap
 	OnEntityCreated func(*ECS, Entity, EntityType) (*any, error)
 	// NOTE: Here is a list of functions that it is safe to call from CustumOnTick
 	// - ecs.DestroyEntity
 	// - ecs.CreateEntity
-	CustumOnTick func(*ECS, []EntityType, []roaring64.Bitmap)
+	CustumOnTick func(*ECS, []EntityType, []roaring64.Bitmap, []EntityType, []roaring64.Bitmap)
 }
 
 func (s *System) AddIfMatches(e Entity, et EntityType) {
@@ -64,5 +67,5 @@ func (s *System) OnTick(ecs *ECS) {
 		}
 	}
 
-	s.CustumOnTick(ecs, s.queries, s.entities)
+	s.CustumOnTick(ecs, s.queries, s.entities, s.queriesMut, s.entitiesMut)
 }
