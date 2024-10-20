@@ -1,4 +1,4 @@
-package generational 
+package generational
 
 import (
 	"errors"
@@ -6,65 +6,65 @@ import (
 )
 
 type GenAllocatorEntry struct {
-  // The generation of the entry.
-  Generation     int `json:"generation"`
-  IsLive         bool `json:"isLive"`
+	// The generation of the entry.
+	Generation int  `json:"generation"`
+	IsLive     bool `json:"isLive"`
 }
 
 type GenAllocator struct {
-  FreeList    []int               `json:"freeList"`
-  Entries     []GenAllocatorEntry `json:"entries"`
+	FreeList []int               `json:"freeList"`
+	Entries  []GenAllocatorEntry `json:"entries"`
 }
 
 func CreateGenAllocatorOfSize(size int) GenAllocator {
-  alloc := GenAllocator {
-    FreeList: make([]int, size, size),
-    Entries: make([]GenAllocatorEntry, size, size),
-  }
+	alloc := GenAllocator{
+		FreeList: make([]int, size, size),
+		Entries:  make([]GenAllocatorEntry, size, size),
+	}
 
-  for i := range size { 
-    alloc.FreeList[i] = i
-  }
+	for i := range size {
+		alloc.FreeList[i] = i
+	}
 
-  return alloc
+	return alloc
 }
 
 func (alloc *GenAllocator) Allocate() GenIndex {
-  top := alloc.FreeList[len(alloc.FreeList) - 1]
-  
-  alloc.FreeList = alloc.FreeList[:len(alloc.FreeList) - 1]
+	top := alloc.FreeList[len(alloc.FreeList)-1]
 
-  generation := alloc.Entries[top].Generation
+	alloc.FreeList = alloc.FreeList[:len(alloc.FreeList)-1]
 
-  alloc.Entries[top].IsLive = true
+	generation := alloc.Entries[top].Generation
 
-  return GenIndex {
-    Index:      top,
-    Generation: generation,
-  }
+	alloc.Entries[top].IsLive = true
+
+	return GenIndex{
+		Index:      top,
+		Generation: generation,
+	}
 }
 
 func (alloc *GenAllocator) Deallocate(genIndex GenIndex) error {
-  n := len(alloc.FreeList)
-  
-  if (genIndex.Index >= n) {
-    fmtString := "Attempt to deallocate out-of-bounds genIndex [%d] from array of length [%d]"
-    errorMsg := fmt.Sprintf(fmtString, genIndex.Index, n)
+	n := len(alloc.FreeList)
 
-    return errors.New(errorMsg)
-  } 
-  
-  if (!alloc.Entries[genIndex.Index].IsLive) {
-    fmtString := "Attempt to deallocate freed genIndex [%d]"
-    errorMsg := fmt.Sprint(fmtString, genIndex.Index)
+	if genIndex.Index >= n {
+		fmtString := "Attempt to deallocate out-of-bounds genIndex [%d] from array of length [%d]"
+		errorMsg := fmt.Sprintf(fmtString, genIndex.Index, n)
 
-    return errors.New(errorMsg)
-  }
+		return errors.New(errorMsg)
+	}
 
-  alloc.Entries[genIndex.Index].IsLive = false
-  alloc.Entries[genIndex.Index].Generation += 1 
+	if !alloc.Entries[genIndex.Index].IsLive {
+		fmtString := "Attempt to deallocate freed genIndex [%d]"
+		errorMsg := fmt.Sprint(fmtString, genIndex.Index)
 
-  alloc.FreeList = append(alloc.FreeList, genIndex.Index)
+		return errors.New(errorMsg)
+	}
 
-  return nil
+	alloc.Entries[genIndex.Index].IsLive = false
+	alloc.Entries[genIndex.Index].Generation += 1
+
+	alloc.FreeList = append(alloc.FreeList, genIndex.Index)
+
+	return nil
 }
