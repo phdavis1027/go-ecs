@@ -1,9 +1,11 @@
-package generational 
+package generational
 
 import (
 	"errors"
 	"fmt"
-  "github.com/phdavis1027/goecs/util"
+
+	"github.com/phdavis1027/goecs/entity"
+	"github.com/phdavis1027/goecs/util"
 )
 
 type GenIndex struct {
@@ -52,29 +54,29 @@ func (genArray GenArray[T]) Get(genIndex GenIndex) (*T, error) {
   return &genArray[genIndex.Index].Val.Inner, nil
 }
 
-func (genArray GenArray[T]) Set(genIndex GenIndex, newVal T) error {
+func (genArray GenArray[T]) Set(genIndex entity.Entity, newVal T) error {
   n := len(genArray)
 
-  if (genIndex.Index >= n) {
+  if (genIndex.Index() >= n) {
     fmtString := "Attempt to set index [%d] when genArray has size [%d]"
     errorMsg := fmt.Sprintf(fmtString, genIndex.Index, n)
 
     return errors.New(errorMsg) 
   }
 
-  indexedGen := genArray[genIndex.Index].Generation
+  indexedGen := genArray[genIndex.Index()].Generation
 
-  if (genIndex.Generation < indexedGen) {
+  if (genIndex.Generation() < indexedGen) {
     fmtString := "Attempt to overwrite genArray entry with generation [%d], attempted generation was only [%d]"
-    errorMsg := fmt.Sprintf(fmtString, indexedGen, genIndex.Generation)
+    errorMsg := fmt.Sprintf(fmtString, indexedGen, genIndex.Generation())
 
     return errors.New(errorMsg)
   }
 
-  genArray[genIndex.Index].Val.Inner = newVal
-  genArray[genIndex.Index].Val.IsSome = true
+  genArray[genIndex.Index()].Val.Inner = newVal
+  genArray[genIndex.Index()].Val.IsSome = true
 
-  genArray[genIndex.Index].Generation = genIndex.Generation
+  genArray[genIndex.Index()].Generation = genIndex.Generation()
 
   return nil
 }

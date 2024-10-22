@@ -2,6 +2,7 @@ package entity
 
 import (
 	// Local libs
+	"fmt"
 	"os"
 	"sync"
 
@@ -21,6 +22,7 @@ const (
   One	
   Two 
   Three 
+  Tile
 )
 
 func (entity Entity) Index() int {
@@ -37,13 +39,40 @@ type ECS struct {
 	genAlloc generational.GenAllocator
 
 	// Add entities here
-	healthComponent generational.GenArray[int]
+  rectComponent   generational.GenArray[Rect]        
+  layerComponent  generational.GenArray[int]
 
 	entities [256]roaring64.Bitmap
 	dirtyMap [256]bool
 
 	Systems graph.Graph[string, *System]
   numSystems int
+}
+
+func (ecs *ECS) AttachLayerComponent(entity Entity, entityType EntityType, layer int) error {
+  if !ecs.isValidEntryOfType(entityType, entity) {
+    return fmt.Errorf("invalid entity")
+  }
+
+  err := ecs.layerComponent.Set(entity, layer)
+  if err != nil {
+    return err
+  }
+
+  return nil
+}
+
+func (ecs *ECS) AttachRectComponent(entity Entity, entityType EntityType, rect Rect ) error {
+  if !ecs.isValidEntryOfType(entityType, entity) {
+    return fmt.Errorf("invalid entity")
+  }
+
+  err := ecs.rectComponent.Set(entity, rect)
+  if err != nil {
+    return err
+  }
+
+  return nil
 }
 
 func (ecs *ECS) RegisterSystem(name string, cb func(*ECS, []EntityType, []roaring64.Bitmap, []EntityType, []roaring64.Bitmap)) {

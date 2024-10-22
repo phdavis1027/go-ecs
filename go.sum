@@ -17,6 +17,8 @@ github.com/dominikbraun/graph v0.23.0 h1:TdZB4pPqCLFxYhdyMFb1TBdFxp8XLcJfTTBQucV
 github.com/dominikbraun/graph v0.23.0/go.mod h1:yOjYyogZLY1LSG9E33JWZJiq5k83Qy2C6POAuiViluc=
 github.com/go-fonts/liberation v0.3.3 h1:tM/T2vEOhjia6v5krQu8SDDegfH1SfXVRUNNKpq0Usk=
 github.com/go-fonts/liberation v0.3.3/go.mod h1:eUAzNRuJnpSnd1sm2EyloQfSOT79pdw7X7++Ri+3MCU=
+github.com/go-gl/glfw/v3.3/glfw v0.0.0-20240506104042-037f3cc74f2a h1:vxnBhFDDT+xzxf1jTJKMKZw3H0swfWk9RpWbBbDK5+0=
+github.com/go-gl/glfw/v3.3/glfw v0.0.0-20240506104042-037f3cc74f2a/go.mod h1:tQ2UAYgL5IevRw8kRxooKSPJfGvJ9fJQFa0TUsXzTg8=
 github.com/go-latex/latex v0.0.0-20240709081214-31cef3c7570e h1:xcdj0LWnMSIU1j8+jIeJyfvk6SjgJedFQssSqFthJ2E=
 github.com/go-latex/latex v0.0.0-20240709081214-31cef3c7570e/go.mod h1:J4SAGzkcl+28QWi7yz72tyC/4aGnppOvya+AEv4TaAQ=
 github.com/go-pdf/fpdf v0.9.0 h1:PPvSaUuo1iMi9KkaAn90NuKi+P4gwMedWPHhj8YlJQw=

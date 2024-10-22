@@ -10,6 +10,7 @@ require (
 	github.com/campoy/embedmd v1.0.0 // indirect
 	github.com/dominikbraun/graph v0.23.0 // indirect
 	github.com/go-fonts/liberation v0.3.3 // indirect
+	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20240506104042-037f3cc74f2a // indirect
 	github.com/go-latex/latex v0.0.0-20240709081214-31cef3c7570e // indirect
 	github.com/go-pdf/fpdf v0.9.0 // indirect
 	github.com/goccmack/gocc v0.0.0-20230228185258-2292f9e40198 // indirect
