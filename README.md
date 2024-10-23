@@ -14,3 +14,11 @@ That's because the system component provides a natural place to put a pretty (th
 concurrency system. My plan is to implement [this paper](https://arxiv.org/pdf/1503.03642), where "transactions"/"transaction-pieces"
 get mapped to Systems and "records" get mapped to entity types (which, in the ECS, are represented as 256 independent bitsets.) 
 Since systems should have relatively independent concerns, most of the time, we should get a lot of concurrency from a scheme like this.
+
+- Next step: I am *not* artistically gifted, so I have asked my sister to design a tileset. Which means that in the meantime, I'll be working on tile rendering. 
+I think I'll use SDL for this application since I've played around with OpenGL before and spent most of my time fighting configuration rather than doing graphics
+programming. Also, it seems that OpenGL integrates with SDL, so I can always come back and migrate piecemeal if I need hardware acceleration.
+
+For this stage, the main event is probably going to be efficient rendering. Specifically, way back in elementary or moddle schol (before I knew anything about programming), I remember an episode
+of Modern Marvels about how video players only render the pixels that change from frame to frame. For some reason I've always that idea was so cool, so I think it would be cool
+to implement something like for myself.
