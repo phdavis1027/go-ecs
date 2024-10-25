@@ -1,34 +1,37 @@
 package window
 
-import "github.com/go-gl/glfw/v3.3/glfw"
-
-type Window struct {
-  height int
-  width int
-}
+import "github.com/veandco/go-sdl2/sdl"
 
 type WindowManager struct {
-  primaryWindow Window
+  primaryWindow *sdl.Window
 }
 
-func (wm *WindowManager) Init(height, width int) error {
-  wm.primaryWindow = Window{height: height, width: width}
+func (wm *WindowManager) OpenWindow(name string, height, width int, setPrimary bool) (*sdl.Window, error) {
+	var window *sdl.Window
+	var err error
 
-  err := glfw.Init()
-  if err != nil {
-    return err
-  }
-  
-  window, err := glfw.CreateWindow(width, height, "Primary", nil, nil)
-  if err != nil {
-    return err
-  }
-  window.MakeContextCurrent()
+	sdl.Do(func() {
+		window, err = sdl.CreateWindow(
+			name,
+			sdl.WINDOWPOS_UNDEFINED,
+			sdl.WINDOWPOS_UNDEFINED,
+			int32(width),
+			int32(height),
+			sdl.WINDOW_SHOWN,
+		)
+	})
 
-  for !window.ShouldClose() {
-    window.SwapBuffers()
-    glfw.PollEvents()
-  }
+	if err != nil {
+		return nil, err
+	}
 
-  return nil
+	if setPrimary {
+		wm.primaryWindow = window
+	}
+
+	return window, nil
+}
+
+func (self *WindowManager) DestroyWindows() {
+	self.primaryWindow.Destroy()
 }

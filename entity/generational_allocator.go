@@ -1,4 +1,4 @@
-package generational
+package entity
 
 import (
 	"errors"

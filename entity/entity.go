@@ -9,7 +9,7 @@ import (
 	"github.com/RoaringBitmap/roaring/roaring64"
 	"github.com/dominikbraun/graph"
 	"github.com/dominikbraun/graph/draw"
-	"github.com/phdavis1027/goecs/entity/generational"
+	"github.com/veandco/go-sdl2/sdl"
 )
 
 type Entity int64
@@ -18,11 +18,7 @@ type EntityType uint8
 type SystemHandle int
 
 const (
-	Zero EntityType = iota
-  One	
-  Two 
-  Three 
-  Tile
+	TILE EntityType = iota
 )
 
 func (entity Entity) Index() int {
@@ -34,217 +30,232 @@ func (entity Entity) Generation() int {
 }
 
 type ECS struct {
-	capacity int
+	capacity 	      int
 
-	genAlloc generational.GenAllocator
+	genAlloc 	      GenAllocator
 
 	// Add entities here
-  rectComponent   generational.GenArray[Rect]        
-  layerComponent  generational.GenArray[int]
+	layerComponent    GenArray[int]
+	positionComponent GenArray[sdl.Point]
+	renderComponent   GenArray[RenderData]	
 
-	entities [256]roaring64.Bitmap
-	dirtyMap [256]bool
+	entities          [256]roaring64.Bitmap
+	dirtyMap          [256]bool
 
-	Systems graph.Graph[string, *System]
-  numSystems int
+	Systems           graph.Graph[string, *System]
+	numSystems        int
 }
 
-func (ecs *ECS) AttachLayerComponent(entity Entity, entityType EntityType, layer int) error {
-  if !ecs.isValidEntryOfType(entityType, entity) {
-    return fmt.Errorf("invalid entity")
-  }
+func (ecs *ECS) AttachPositionComponent(entity Entity, entityType EntityType) error {
+	if !ecs.isValidEntryOfType(entityType, entity) {
+		return fmt.Errorf("invalid entity")
+	}
 
-  err := ecs.layerComponent.Set(entity, layer)
-  if err != nil {
-    return err
-  }
+	err := ecs.positionComponent.Set(entity, sdl.Point{})
+	if err != nil {
+		return err
+	}
 
-  return nil
+	return nil
 }
 
-func (ecs *ECS) AttachRectComponent(entity Entity, entityType EntityType, rect Rect ) error {
-  if !ecs.isValidEntryOfType(entityType, entity) {
-    return fmt.Errorf("invalid entity")
-  }
+func (ecs *ECS) AttachRenderComponent(entity Entity, entityType EntityType) error {
+	if !ecs.isValidEntryOfType(entityType, entity) {
+		return fmt.Errorf("invalid entity")
+	}
 
-  err := ecs.rectComponent.Set(entity, rect)
-  if err != nil {
-    return err
-  }
+	err := ecs.renderComponent.Set(entity, RenderData{})
+	if err != nil {
+		return err
+	}
 
-  return nil
+	return nil
 }
 
-func (ecs *ECS) RegisterSystem(name string, cb func(*ECS, []EntityType, []roaring64.Bitmap, []EntityType, []roaring64.Bitmap)) {
+func (ecs *ECS) AttachLayerComponent(entity Entity, entityType EntityType) error {
+	if !ecs.isValidEntryOfType(entityType, entity) {
+		return fmt.Errorf("invalid entity")
+	}
+
+	err := ecs.layerComponent.Set(entity, -1)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (ecs *ECS) RegisterSystem(name string, cb SystemFunc) {
 	system := new(System)
 
 	system.name = name
 	system.CustumOnTick = cb
 
 	ecs.Systems.AddVertex(system)
-  ecs.numSystems++
+	ecs.numSystems++
 }
 
 type DSetEntry struct {
-  name     string
-  mut      bool
+	name string
+	mut  bool
 }
 
 func (ecs *ECS) RunSchedule() error {
-  quitter := make(chan struct{})
+	quitter := make(chan struct{})
 
-  for {
-    select {
-      case <- quitter:
-        break
-      default: {
-        n := ecs.numSystems
+	for {
+		select {
+		case <-quitter:
+			break
+		default:
+			{
+				n := ecs.numSystems
 
-        systems, err := ecs.Systems.Clone()
-        if err != nil {
-          return err
-        }
-      
-        for n > 0 {
-          predMap, err := systems.PredecessorMap()
-          if err != nil {
-            return err
-          }
+				systems, err := ecs.Systems.Clone()
+				if err != nil {
+					return err
+				}
 
-          adjMap, err := systems.AdjacencyMap()
-          if err != nil {
-            return err
-          }
+				for n > 0 {
+					predMap, err := systems.PredecessorMap()
+					if err != nil {
+						return err
+					}
 
-          var wg sync.WaitGroup
+					adjMap, err := systems.AdjacencyMap()
+					if err != nil {
+						return err
+					}
 
-          for k := range predMap {
-            if len(predMap[k]) == 0 {
+					var wg sync.WaitGroup
 
-              // Rip out 0 in-degree system
-              for _, v := range adjMap[k] {
-                systems.RemoveEdge(v.Source, v.Target)
-              }
+					for k := range predMap {
+						if len(predMap[k]) == 0 {
 
-              system, err := systems.Vertex(k)
-              if err != nil {
-                return err
-              }
+							// Rip out 0 in-degree system
+							for _, v := range adjMap[k] {
+								systems.RemoveEdge(v.Source, v.Target)
+							}
 
-              systems.RemoveVertex( k )
-              n--
+							system, err := systems.Vertex(k)
+							if err != nil {
+								return err
+							}
 
-              wg.Add(1)    
+							systems.RemoveVertex(k)
+							n--
 
-              go func(hash string, system *System) {
-                defer wg.Done()
+							wg.Add(1)
 
-                system.OnTick(ecs)
-              }(k, system)
-            }
-          }
-          wg.Wait()
-        } // for n > 0
-      } // default
-    } // select
-  } // for (infinite loop)
-} 
+							go func(hash string, system *System) {
+								defer wg.Done()
+
+								system.OnTick(ecs)
+							}(k, system)
+						}
+					}
+					wg.Wait()
+				} // for n > 0
+			} // default
+		} // select
+	} // for (infinite loop)
+}
 
 func (ecs *ECS) CompileSchedule(debug bool) error {
-  // Algorithm 1 from Yao et al
-  // iterate over all vertices 
-  adjMap, err := ecs.Systems.AdjacencyMap()
-  if err != nil {
-    return err
-  }
+	// Algorithm 1 from Yao et al
+	// iterate over all vertices
+	adjMap, err := ecs.Systems.AdjacencyMap()
+	if err != nil {
+		return err
+	}
 
-  dSets := [256][]DSetEntry{}
+	dSets := [256][]DSetEntry{}
 
-  for qHash := range adjMap {
-    // fmt.Printf( "Processing %s\n", qHash)
+	for qHash := range adjMap {
+		// fmt.Printf( "Processing %s\n", qHash)
 
-    q, err := ecs.Systems.Vertex(qHash)
-    if err != nil {
-      return err
-    }
+		q, err := ecs.Systems.Vertex(qHash)
+		if err != nil {
+			return err
+		}
 
-    for _, query := range q.queries {
-      // fmt.Printf("%v\n", dSets)
+		for _, query := range q.queries {
+			// fmt.Printf("%v\n", dSets)
 
-      dSet := &(dSets[query])
+			dSet := &(dSets[query])
 
-      if len(*dSet) == 0 {
-        entry := DSetEntry{ name: qHash, mut: false }
-        dSets[query] = append(dSets[query], entry)
-      } else if len(*dSet) == 1 && (*dSet)[0].mut {
-        rHash := (*dSet)[0].name
+			if len(*dSet) == 0 {
+				entry := DSetEntry{name: qHash, mut: false}
+				dSets[query] = append(dSets[query], entry)
+			} else if len(*dSet) == 1 && (*dSet)[0].mut {
+				rHash := (*dSet)[0].name
 
-        err := ecs.Systems.AddEdge(qHash, rHash)
-        if err != nil {
-          return err
-        }
+				err := ecs.Systems.AddEdge(qHash, rHash)
+				if err != nil {
+					return err
+				}
 
-        dSets[query][0] = DSetEntry{ name: qHash, mut: false }
-      } else {
-        maybeLk := dSets[query][0]
+				dSets[query][0] = DSetEntry{name: qHash, mut: false}
+			} else {
+				maybeLk := dSets[query][0]
 
-        if (maybeLk.mut) {
-          lkHash := maybeLk.name
+				if maybeLk.mut {
+					lkHash := maybeLk.name
 
-          err := ecs.Systems.AddEdge(qHash, lkHash)
-          if err != nil {
-            return err
-          }
+					err := ecs.Systems.AddEdge(qHash, lkHash)
+					if err != nil {
+						return err
+					}
 
-        }
+				}
 
-        entry := DSetEntry{ name: qHash, mut: false }
-        dSets[query] = append(dSets[query], entry)
-      }
-    } // for query
+				entry := DSetEntry{name: qHash, mut: false}
+				dSets[query] = append(dSets[query], entry)
+			}
+		} // for query
 
-    for _, mutQuery := range q.queriesMut {
-      dSet := &(dSets[mutQuery])
+		for _, mutQuery := range q.queriesMut {
+			dSet := &(dSets[mutQuery])
 
-      if len(*dSet) == 0  {
-        entry := DSetEntry{ name: qHash, mut: true }
-        dSets[mutQuery] = append(dSets[mutQuery], entry)
-      } else if len(*dSet) == 1 && (*dSet)[0].mut {
-        rHash := (*dSet)[0].name
+			if len(*dSet) == 0 {
+				entry := DSetEntry{name: qHash, mut: true}
+				dSets[mutQuery] = append(dSets[mutQuery], entry)
+			} else if len(*dSet) == 1 && (*dSet)[0].mut {
+				rHash := (*dSet)[0].name
 
-        err := ecs.Systems.AddEdge(qHash, rHash)
-        if err != nil {
-          return err
-        }
+				err := ecs.Systems.AddEdge(qHash, rHash)
+				if err != nil {
+					return err
+				}
 
-        dSets[mutQuery][0] = DSetEntry{ name: qHash, mut: true }
-      } else {
+				dSets[mutQuery][0] = DSetEntry{name: qHash, mut: true}
+			} else {
 
-        for _, entry := range dSets[mutQuery] {
-          if entry.name == qHash {
-            continue
-          }
+				for _, entry := range dSets[mutQuery] {
+					if entry.name == qHash {
+						continue
+					}
 
-          rHash := entry.name
+					rHash := entry.name
 
-          err := ecs.Systems.AddEdge(qHash, rHash)
-          if err != nil {
-            return err
-          }
-        }
+					err := ecs.Systems.AddEdge(qHash, rHash)
+					if err != nil {
+						return err
+					}
+				}
 
-        newEntry := DSetEntry{ name: qHash, mut: true }
-        dSets[mutQuery] = nil 
-        dSets[mutQuery] = append(dSets[mutQuery], newEntry)
-      }
-    } // for mutQuery
-  } // for q
+				newEntry := DSetEntry{name: qHash, mut: true}
+				dSets[mutQuery] = nil
+				dSets[mutQuery] = append(dSets[mutQuery], newEntry)
+			}
+		} // for mutQuery
+	} // for q
 
-  if debug {
-    file, _ := os.Create("debug.txt")
-    defer file.Close()
-    draw.DOT(ecs.Systems, file)
-  }
+	if debug {
+		file, _ := os.Create("debug.txt")
+		defer file.Close()
+		draw.DOT(ecs.Systems, file)
+	}
 
 	return nil
 }
@@ -291,9 +302,7 @@ func (ecs *ECS) isValidEntry(entity Entity) (EntityType, bool) {
 func CreateEcsOfCapacity(capacity int) *ECS {
 	ecs := new(ECS)
 
-	ecs.genAlloc = generational.CreateGenAllocatorOfSize(capacity)
-
-	ecs.healthComponent = generational.CreateGenArrayOfSize[int](capacity)
+	ecs.genAlloc = CreateGenAllocatorOfSize(capacity)
 
 	ecs.capacity = capacity
 

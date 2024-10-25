@@ -8,17 +8,19 @@ func SystemHash(s *System) string {
 	return s.name
 }
 
+type SystemFunc = func(*ECS, []EntityType, []roaring64.Bitmap, []EntityType, []roaring64.Bitmap)
+
 type System struct {
 	name            string
 	queries         []EntityType
-  entities        []roaring64.Bitmap
+	entities        []roaring64.Bitmap
 	queriesMut      []EntityType
-  entitiesMut        []roaring64.Bitmap
+	entitiesMut     []roaring64.Bitmap
 	OnEntityCreated func(*ECS, Entity, EntityType) (*any, error)
 	// NOTE: Here is a list of functions that it is safe to call from CustumOnTick
 	// - ecs.DestroyEntity
 	// - ecs.CreateEntity
-	CustumOnTick func(*ECS, []EntityType, []roaring64.Bitmap, []EntityType, []roaring64.Bitmap)
+	CustumOnTick    SystemFunc
 }
 
 func (s *System) AddIfMatches(e Entity, et EntityType) {

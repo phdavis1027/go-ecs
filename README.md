@@ -22,3 +22,6 @@ programming. Also, it seems that OpenGL integrates with SDL, so I can always com
 For this stage, the main event is probably going to be efficient rendering. Specifically, way back in elementary or moddle schol (before I knew anything about programming), I remember an episode
 of Modern Marvels about how video players only render the pixels that change from frame to frame. For some reason I've always that idea was so cool, so I think it would be cool
 to implement something like for myself.
+
+- JK, I'm going to do it in OpenGL and learn incrementally. I really hate the feeling of not being able to look at code and understand what it's doing, and SDL
+just felt to much like a blackbox. For example, I didn't like that it handled batching on its own. That feels anti-learning.
