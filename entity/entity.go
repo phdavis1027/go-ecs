@@ -37,7 +37,6 @@ type ECS struct {
 	// Add entities here
 	layerComponent    GenArray[int]
 	positionComponent GenArray[sdl.Point]
-	renderComponent   GenArray[RenderData]	
 
 	entities          [256]roaring64.Bitmap
 	dirtyMap          [256]bool
@@ -52,19 +51,6 @@ func (ecs *ECS) AttachPositionComponent(entity Entity, entityType EntityType) er
 	}
 
 	err := ecs.positionComponent.Set(entity, sdl.Point{})
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (ecs *ECS) AttachRenderComponent(entity Entity, entityType EntityType) error {
-	if !ecs.isValidEntryOfType(entityType, entity) {
-		return fmt.Errorf("invalid entity")
-	}
-
-	err := ecs.renderComponent.Set(entity, RenderData{})
 	if err != nil {
 		return err
 	}

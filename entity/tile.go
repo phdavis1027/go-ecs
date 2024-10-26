@@ -11,12 +11,5 @@ func (ecs *ECS) CreateTile(layer int) (Entity, error) {
 		return -1, error
 	}
 
-	error = ecs.AttachRenderComponent(tileEntity, TILE)
-	if error != nil {
-		return -1, error
-	}
-
-
-
 	return tileEntity, nil
 }
