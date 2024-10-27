@@ -32,21 +32,23 @@ func NewRenderer() *Renderer {
 
 // WARNING: MUST BE CALLED FROM THE MAIN THREAD
 func (self *Renderer) Init() error {
-	gl.GenVertexArrays(1, &self.Vao)
+	gl.ClearColor(0.1, 0.1, 0.1, 1.0)
+
+	gl.CreateVertexArrays(1, &self.Vao)
 	gl.BindVertexArray(self.Vao)
 
-	gl.GenBuffers(1, &self.Vbo)
+	gl.CreateBuffers(1, &self.Vbo)
 	gl.BindBuffer(gl.ARRAY_BUFFER, self.Vbo)
 	gl.BufferData(gl.ARRAY_BUFFER, len(self.Vertices)*4, gl.Ptr(self.Vertices), gl.STATIC_DRAW)
 
+	gl.EnableVertexArrayAttrib(self.Vbo, POSITION_ATTRIB)
 	gl.VertexAttribPointer(POSITION_ATTRIB, 3, gl.FLOAT, false, 0, nil)
-	gl.EnableVertexAttribArray(POSITION_ATTRIB)
 
 	gl.CreateBuffers(1, &self.IBuf)
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, self.IBuf)
 	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(self.Indices)*4, gl.Ptr(self.Indices), gl.STATIC_DRAW)
 
-	program, err := LoadShaderProgram("shaders/passthrough.glsl.vert", "shaders/fragment.glsl")
+	program, err := LoadShaderProgram("/home/phillipdavis/everyday/dev/go/go-ecs/render/shaders/passthrough.glsl.vert", "/home/phillipdavis/everyday/dev/go/go-ecs/render/shaders/fragment.glsl")
 	if err != nil {
 		return err
 	}

@@ -50,6 +50,7 @@ func LoadShaderProgram(vertShaderPath, fragShaderPath string) (uint32, error) {
 
 		log := string(make([]byte, length))
 		gl.GetProgramInfoLog(program, length, nil, gl.Str(log))
+		fmt.Printf("Program link log: %v\n", log)
 		return 0, fmt.Errorf("failed to link program: %v", log)
 	}
 
@@ -61,7 +62,7 @@ func compileShader(source string, shaderType uint32) (uint32, error) {
 	shader := gl.CreateShader(shaderType)
 
 	// Set shader source
-	csource, free := gl.Strs(source)
+	csource, free := gl.Strs(source + string(rune(0)))
 	defer free()
 
 	gl.ShaderSource(shader, 1, csource, nil)
@@ -76,8 +77,9 @@ func compileShader(source string, shaderType uint32) (uint32, error) {
 		var length int32
 		gl.GetShaderiv(shader, gl.INFO_LOG_LENGTH, &length)
 
-		log := string(make([]byte, length))
+		log := string(make([]byte, length)) + string(rune(0))
 		gl.GetShaderInfoLog(shader, length, nil, gl.Str(log))
+		fmt.Printf("Shader compile log: %v\n", log)
 		return 0, fmt.Errorf("failed to compile shader: %v", log)
 	}
 

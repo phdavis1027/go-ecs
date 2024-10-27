@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -52,24 +53,44 @@ func (app *App) Main(stopButton chan(struct {})) error {
 	return nil
 }
 
-func (app *App) Init() error {
+func (app *App) Init() (*glfw.Window, error) {
 	// initialize GL
 	err := glfw.Init()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	err = gl.Init()
+	glfw.WindowHint(glfw.Resizable, glfw.False)
+	glfw.WindowHint(glfw.ContextVersionMajor, 4)
+	glfw.WindowHint(glfw.ContextVersionMinor, 5)
+	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
+
+
+	window, err := glfw.CreateWindow(WindowWidth, WindowHeight, app.name, nil, nil)
+
 	if err != nil {
-		return err
+		return nil, err
 	}
+	window.MakeContextCurrent()
+	window.SetFramebufferSizeCallback(func(w *glfw.Window, width, height int) {	
+		gl.Viewport(0, 0, int32(width), int32(height))
+	})
+
+
+	err = gl.Init()
+	fmt.Printf("asdfasdfasdf %v\n", gl.GoStr(gl.GetString(gl.VERSION)))
+
+	if err != nil {
+		return nil, err
+	}
+
 
 	err = app.renderer.Init()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return window, nil
 }
 
 func (app *App) Terminate() {
@@ -77,27 +98,17 @@ func (app *App) Terminate() {
 	glfw.Terminate()
 }
 
+// WARNING: Must run on main thread
 func (app *App) Run() error {
 	// True => make primary window
-	app.Init()
+	_, err := app.Init()
+	gl.Viewport(0, 0, WindowWidth, WindowHeight)
+	if err != nil {
+		return err
+	}	
 	defer app.Terminate()
 
 	// GLFW things
-	glfw.WindowHint(glfw.Resizable, glfw.False)
-	glfw.WindowHint(glfw.ContextVersionMajor, 4)
-	glfw.WindowHint(glfw.ContextVersionMinor, 5)
-	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
-
-	window, err := glfw.CreateWindow(WindowWidth, WindowHeight, app.name, nil, nil)
-
-	if err != nil {
-		return err
-	}
-	window.MakeContextCurrent()
-	window.SetFramebufferSizeCallback(func(w *glfw.Window, width, height int) {	
-		gl.Viewport(0, 0, int32(width), int32(height))
-	})
-	gl.Viewport(0, 0, WindowWidth, WindowHeight)
 
 	var renderWorkQueue  = make(chan func())
 	var stopButton       = make(chan struct{})

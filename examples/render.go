@@ -13,7 +13,9 @@ func init() {
 func main() {
 	app := app.NewApp("Get Rect", 100)
 
-	app.Init()
+	if _, err := app.Init(); err != nil {
+		panic(err)
+	}
 
 	app.Run()
 }
