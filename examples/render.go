@@ -1,9 +1,10 @@
 package main
 
-import "runtime"
-
 import (
+	"runtime"
+
 	"github.com/phdavis1027/goecs/app"
+	"github.com/pkg/profile"
 )
 
 func init() {
@@ -11,11 +12,7 @@ func init() {
 }
 
 func main() {
-	app := app.NewApp("Get Rect", 100)
+	defer profile.Start(profile.GoroutineProfile).Stop()
 
-	if _, err := app.Init(); err != nil {
-		panic(err)
-	}
-
-	app.Run()
+	app.NewApp("Get Rect", 100).Run()
 }

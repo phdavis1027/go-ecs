@@ -3,6 +3,7 @@ package render
 import (
 	"github.com/RoaringBitmap/roaring/roaring64"
 	"github.com/go-gl/gl/v4.5-core/gl"
+	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/phdavis1027/goecs/entity"
 )
 
@@ -31,35 +32,35 @@ func NewRenderer() *Renderer {
 }
 
 // WARNING: MUST BE CALLED FROM THE MAIN THREAD
+// WARNING: Assumes a valid OpenGL context has been created
 func (self *Renderer) Init() error {
 	gl.ClearColor(0.1, 0.1, 0.1, 1.0)
 
-	gl.CreateVertexArrays(1, &self.Vao)
+	gl.GenVertexArrays(1, &self.Vao)
 	gl.BindVertexArray(self.Vao)
 
-	gl.CreateBuffers(1, &self.Vbo)
+	gl.GenBuffers(1, &self.Vbo)
 	gl.BindBuffer(gl.ARRAY_BUFFER, self.Vbo)
 	gl.BufferData(gl.ARRAY_BUFFER, len(self.Vertices)*4, gl.Ptr(self.Vertices), gl.STATIC_DRAW)
 
+	gl.VertexAttribPointer(POSITION_ATTRIB, 3, gl.FLOAT, false, 12, nil)
 	gl.EnableVertexArrayAttrib(self.Vbo, POSITION_ATTRIB)
-	gl.VertexAttribPointer(POSITION_ATTRIB, 3, gl.FLOAT, false, 0, nil)
 
 	gl.CreateBuffers(1, &self.IBuf)
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, self.IBuf)
 	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(self.Indices)*4, gl.Ptr(self.Indices), gl.STATIC_DRAW)
 
-	program, err := LoadShaderProgram("/home/phillipdavis/everyday/dev/go/go-ecs/render/shaders/passthrough.glsl.vert", "/home/phillipdavis/everyday/dev/go/go-ecs/render/shaders/fragment.glsl")
+	program, err := LoadShaderProgram("/home/phillipdavis/everyday/dev/go/go-ecs/render/shaders/passthrough.glsl.vert", "/home/phillipdavis/everyday/dev/go/go-ecs/render/shaders/solid_color.glsl.frag")
 	if err != nil {
-		return err
+		panic(err)	
 	}
 	self.Program = program
-
-	gl.UseProgram(program)
 
 	return nil
 }
 
 func (self *Renderer) RenderLogic(
+	window *glfw.Window,
 	workQueue chan func(),
 	ecs *entity.ECS,
 	queries []entity.EntityType,
@@ -69,10 +70,19 @@ func (self *Renderer) RenderLogic(
 
 	DoOn(workQueue, func() {
 		// Render the tiles
-		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+		window.MakeContextCurrent()	
+		glfw.PollEvents()
+
+		if window.GetKey(glfw.KeyEscape) == glfw.Press {
+			window.SetShouldClose(true)
+		}
+
+		gl.Clear(gl.COLOR_BUFFER_BIT)
 		gl.UseProgram(self.Program)
 		gl.BindVertexArray(self.Vao)
 
-		gl.DrawElements(gl.TRIANGLES, int32(len(self.Indices)), gl.UNSIGNED_INT, nil)
+		gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, nil)
+
+		window.SwapBuffers()
 	})
 }

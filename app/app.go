@@ -1,16 +1,15 @@
 package app
 
 import (
-	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/RoaringBitmap/roaring/roaring64"
 	"github.com/go-gl/gl/v4.5-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/phdavis1027/goecs/entity"
 	"github.com/phdavis1027/goecs/render"
-	"github.com/phdavis1027/goecs/window"
 )
 
 const (
@@ -22,7 +21,6 @@ type App struct {
 	name           string
 	logger         *log.Logger
 	ecs            *entity.ECS
-    windowManager  *window.WindowManager
 	renderer       *render.Renderer
 }
 
@@ -30,7 +28,6 @@ func NewApp(name string, ecsCap int) *App {
 	return &App{
 		logger:           log.New(os.Stdout, name, log.LstdFlags),
 		ecs:              entity.CreateEcsOfCapacity(ecsCap),
-    	windowManager:    new(window.WindowManager),
 		name:             name,
 		renderer:         render.NewRenderer(),
 	}
@@ -49,7 +46,6 @@ func (app *App) Main(stopButton chan(struct {})) error {
 		return err
 	}
 
-
 	return nil
 }
 
@@ -57,10 +53,10 @@ func (app *App) Init() (*glfw.Window, error) {
 	// initialize GL
 	err := glfw.Init()
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
-	glfw.WindowHint(glfw.Resizable, glfw.False)
+	glfw.WindowHint(glfw.Resizable, glfw.True)
 	glfw.WindowHint(glfw.ContextVersionMajor, 4)
 	glfw.WindowHint(glfw.ContextVersionMinor, 5)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
@@ -69,89 +65,108 @@ func (app *App) Init() (*glfw.Window, error) {
 	window, err := glfw.CreateWindow(WindowWidth, WindowHeight, app.name, nil, nil)
 
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 	window.MakeContextCurrent()
 	window.SetFramebufferSizeCallback(func(w *glfw.Window, width, height int) {	
 		gl.Viewport(0, 0, int32(width), int32(height))
 	})
 
-
 	err = gl.Init()
-	fmt.Printf("asdfasdfasdf %v\n", gl.GoStr(gl.GetString(gl.VERSION)))
 
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
 
 	err = app.renderer.Init()
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
 	return window, nil
 }
 
-func (app *App) Terminate() {
+func (app *App) Terminate(window *glfw.Window)  {
 	// Clean up resources
 	glfw.Terminate()
+	window.Destroy()	
 }
 
 // WARNING: Must run on main thread
 func (app *App) Run() error {
-	// True => make primary window
-	_, err := app.Init()
-	gl.Viewport(0, 0, WindowWidth, WindowHeight)
-	if err != nil {
-		return err
-	}	
-	defer app.Terminate()
 
 	// GLFW things
-
 	var renderWorkQueue  = make(chan func())
 	var stopButton       = make(chan struct{})
 
-	renderer             := render.NewRenderer()
-	renderer.Vertices[0]  = -0.5
-	renderer.Vertices[1]  = -0.5
-	renderer.Vertices[2]  =  0.0
-	renderer.Vertices[3]  =  0.5
-	renderer.Vertices[4]  = -0.5
-	renderer.Vertices[5]  =  0.0
-	renderer.Vertices[6]  =  0.5
-	renderer.Vertices[7]  =  0.5
-	renderer.Vertices[8]  =  0.0
-	renderer.Vertices[9]  = -0.5
-	renderer.Vertices[10] =  0.5
-	renderer.Vertices[11] =  0.0
+	app.renderer.Vertices[0]  = -0.5
+	app.renderer.Vertices[1]  = -0.5
+	app.renderer.Vertices[2]  = 0.0
 
-	renderer.Indices[0]  = 0
-	renderer.Indices[1]  = 1
-	renderer.Indices[2]  = 2
-	renderer.Indices[3]  = 2
-	renderer.Indices[4]  = 3
-	renderer.Indices[5]  = 0
+	app.renderer.Vertices[3]  = 0.5
+	app.renderer.Vertices[4]  = -0.5
+	app.renderer.Vertices[5]  = 0.0
+
+	app.renderer.Vertices[6]  = 0.5
+	app.renderer.Vertices[7]  = 0.5
+	app.renderer.Vertices[8]  = 0.0
+
+	app.renderer.Vertices[9]  = -0.5
+	app.renderer.Vertices[10] = 0.5
+	app.renderer.Vertices[11] = 0.0
+
+	app.renderer.Indices[0]  = 0
+	app.renderer.Indices[1]  = 1
+	app.renderer.Indices[2]  = 2
+	app.renderer.Indices[3]  = 2
+	app.renderer.Indices[4]  = 3
+	app.renderer.Indices[5]  = 0
+
+	window, err := app.Init()
+	gl.Viewport(0, 0, WindowWidth, WindowHeight)
+	if err != nil {
+		panic(err)
+	}	
+	defer app.Terminate(window)
+
+	n := 0
 
 	renderSystem := func (ecs *entity.ECS, queries []entity.EntityType, entities []roaring64.Bitmap, queriesMut []entity.EntityType, entitiesMut []roaring64.Bitmap) {
 		// Render logic here, it sends work to the queue
-		renderer.RenderLogic(renderWorkQueue, ecs, queries, entities, queriesMut, entitiesMut)
+		app.renderer.RenderLogic(window, 
+							 renderWorkQueue, 
+							 ecs, 
+							 queries, 
+							 entities, 
+							 queriesMut, 
+							 entitiesMut)
+
+		n++
 	}
 	app.ecs.RegisterSystem("render", renderSystem)
 	app.ecs.RegisterQueries("render", entity.TILE)
 
-
 	app.logger.Printf("Running app %s\n", app.name)
 	go app.Main(stopButton) 
 
+
+	timeout := make(chan struct{})
+	go func() {
+		time.Sleep(20 * time.Second)
+		timeout <- struct{}{}
+	}()
+
 	// Let the render queue take over the main thread 
-	for {
+	// This can also also us to handle other plugins that require thread-local state
+	for !window.ShouldClose() {
 		select {
 		case work := <-renderWorkQueue:
 			work()
 		case <-stopButton:
 			break
+		case <-timeout:
+			return nil	
 		}
 	}
 

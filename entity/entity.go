@@ -9,7 +9,6 @@ import (
 	"github.com/RoaringBitmap/roaring/roaring64"
 	"github.com/dominikbraun/graph"
 	"github.com/dominikbraun/graph/draw"
-	"github.com/veandco/go-sdl2/sdl"
 )
 
 type Entity int64
@@ -36,26 +35,12 @@ type ECS struct {
 
 	// Add entities here
 	layerComponent    GenArray[int]
-	positionComponent GenArray[sdl.Point]
 
 	entities          [256]roaring64.Bitmap
 	dirtyMap          [256]bool
 
 	Systems           graph.Graph[string, *System]
 	numSystems        int
-}
-
-func (ecs *ECS) AttachPositionComponent(entity Entity, entityType EntityType) error {
-	if !ecs.isValidEntryOfType(entityType, entity) {
-		return fmt.Errorf("invalid entity")
-	}
-
-	err := ecs.positionComponent.Set(entity, sdl.Point{})
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (ecs *ECS) AttachLayerComponent(entity Entity, entityType EntityType) error {
@@ -95,7 +80,9 @@ func (ecs *ECS) RunSchedule() error {
 			break
 		default:
 			{
+
 				n := ecs.numSystems
+
 
 				systems, err := ecs.Systems.Clone()
 				if err != nil {
@@ -142,6 +129,7 @@ func (ecs *ECS) RunSchedule() error {
 					}
 					wg.Wait()
 				} // for n > 0
+
 			} // default
 		} // select
 	} // for (infinite loop)
@@ -216,7 +204,6 @@ func (ecs *ECS) CompileSchedule(debug bool) error {
 
 				dSets[mutQuery][0] = DSetEntry{name: qHash, mut: true}
 			} else {
-
 				for _, entry := range dSets[mutQuery] {
 					if entry.name == qHash {
 						continue

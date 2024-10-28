@@ -15,20 +15,16 @@ func LoadShaderFromFile(path string, shaderType uint32) (uint32, error) {
 	}
 	shaderSource := string(_shaderSource)
 
-	fmt.Printf(shaderSource)
-
 	return compileShader(shaderSource, shaderType)
 }
 
 func LoadShaderProgram(vertShaderPath, fragShaderPath string) (uint32, error) {
 	vertShader, err := LoadShaderFromFile(vertShaderPath, gl.VERTEX_SHADER)
-	defer gl.DeleteShader(vertShader)
 	if err != nil {
 		return 0, err
 	}
 
 	fragShader, err := LoadShaderFromFile(fragShaderPath, gl.FRAGMENT_SHADER)
-	defer gl.DeleteShader(fragShader)
 	if err != nil {
 		return 0, err
 	}
@@ -39,8 +35,6 @@ func LoadShaderProgram(vertShaderPath, fragShaderPath string) (uint32, error) {
 	gl.AttachShader(program, fragShader)
 
 	gl.LinkProgram(program)
-	defer gl.DetachShader(program, vertShader)
-	defer gl.DetachShader(program, fragShader)
 
 	var status int32
 	gl.GetProgramiv(program, gl.LINK_STATUS, &status)
@@ -79,7 +73,6 @@ func compileShader(source string, shaderType uint32) (uint32, error) {
 
 		log := string(make([]byte, length)) + string(rune(0))
 		gl.GetShaderInfoLog(shader, length, nil, gl.Str(log))
-		fmt.Printf("Shader compile log: %v\n", log)
 		return 0, fmt.Errorf("failed to compile shader: %v", log)
 	}
 
