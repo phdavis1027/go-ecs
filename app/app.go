@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	WindowWidth  = 800
-	WindowHeight = 600
+	WindowWidth  = 400 
+	WindowHeight = 400
 )
 
 type App struct {
@@ -100,20 +100,20 @@ func (app *App) Run() error {
 	var renderWorkQueue  = make(chan func())
 	var stopButton       = make(chan struct{})
 
-	app.renderer.Vertices[0]  = -0.5
-	app.renderer.Vertices[1]  = -0.5
+	app.renderer.Vertices[0]  = 100 
+	app.renderer.Vertices[1]  = 300 
 	app.renderer.Vertices[2]  = 0.0
 
-	app.renderer.Vertices[3]  = 0.5
-	app.renderer.Vertices[4]  = -0.5
+	app.renderer.Vertices[3]  = 100 
+	app.renderer.Vertices[4]  = 100 
 	app.renderer.Vertices[5]  = 0.0
 
-	app.renderer.Vertices[6]  = 0.5
-	app.renderer.Vertices[7]  = 0.5
+	app.renderer.Vertices[6]  = 300 
+	app.renderer.Vertices[7]  = 100 
 	app.renderer.Vertices[8]  = 0.0
 
-	app.renderer.Vertices[9]  = -0.5
-	app.renderer.Vertices[10] = 0.5
+	app.renderer.Vertices[9]  = 300 
+	app.renderer.Vertices[10] = 300 
 	app.renderer.Vertices[11] = 0.0
 
 	app.renderer.Indices[0]  = 0

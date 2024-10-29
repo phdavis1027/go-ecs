@@ -50,7 +50,7 @@ func (self *Renderer) Init() error {
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, self.IBuf)
 	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(self.Indices)*4, gl.Ptr(self.Indices), gl.STATIC_DRAW)
 
-	program, err := LoadShaderProgram("/home/phillipdavis/everyday/dev/go/go-ecs/render/shaders/passthrough.glsl.vert", "/home/phillipdavis/everyday/dev/go/go-ecs/render/shaders/solid_color.glsl.frag")
+	program, err := LoadShaderProgram("/home/phillipdavis/everyday/dev/go/go-ecs/render/shaders/passthrough.vert.glsl", "/home/phillipdavis/everyday/dev/go/go-ecs/render/shaders/solid_color.glsl.frag")
 	if err != nil {
 		panic(err)	
 	}
@@ -79,6 +79,11 @@ func (self *Renderer) RenderLogic(
 
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 		gl.UseProgram(self.Program)
+		
+		resLoc := gl.GetUniformLocation(self.Program, gl.Str("res\000"))
+		h, w := window.GetSize()
+
+		gl.Uniform3f( resLoc, float32(w), float32(h), 0.0)
 		gl.BindVertexArray(self.Vao)
 
 		gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, nil)
