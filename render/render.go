@@ -48,7 +48,7 @@ func (self *Renderer) Init() error {
 
 	gl.CreateBuffers(1, &self.IBuf)
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, self.IBuf)
-	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(self.Indices)*4, gl.Ptr(self.Indices), gl.STATIC_DRAW)
+	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(self.Indices)*4, gl.Ptr(self.Indices), gl.DYNAMIC_DRAW)
 
 	program, err := LoadShaderProgram("/home/phillipdavis/everyday/dev/go/go-ecs/render/shaders/passthrough.vert.glsl", "/home/phillipdavis/everyday/dev/go/go-ecs/render/shaders/solid_color.glsl.frag")
 	if err != nil {
@@ -69,6 +69,23 @@ func (self *Renderer) RenderLogic(
 	entitiesMut []roaring64.Bitmap) {
 
 	DoOn(workQueue, func() {
+		h, w := window.GetSize()
+
+		self.Vertices[0]  = float32(w/2.0 - w/4.0)
+		self.Vertices[1]  = float32(h/2.0 + h/4.0)
+		self.Vertices[2]  = 0.0
+
+		self.Vertices[3]  = float32(w/2.0 - w/4.0) 
+		self.Vertices[4]  = float32(h/2.0 - h/4.0) 
+		self.Vertices[5]  = 0.0
+
+		self.Vertices[6]  = float32(w/2.0 + w/4.0) 
+		self.Vertices[7]  = float32(h/2.0 - h/4.0) 
+		self.Vertices[8]  = 0.0
+
+		self.Vertices[9]  = float32(w/2.0 + w/4.0) 
+		self.Vertices[10] = float32(h/2.0 + h/4.0) 
+		self.Vertices[11] = 0.0
 		// Render the tiles
 		window.MakeContextCurrent()	
 		glfw.PollEvents()
@@ -81,10 +98,11 @@ func (self *Renderer) RenderLogic(
 		gl.UseProgram(self.Program)
 		
 		resLoc := gl.GetUniformLocation(self.Program, gl.Str("res\000"))
-		h, w := window.GetSize()
 
 		gl.Uniform3f( resLoc, float32(w), float32(h), 0.0)
 		gl.BindVertexArray(self.Vao)
+		gl.BindBuffer(gl.ARRAY_BUFFER, self.Vbo)
+		gl.BufferSubData(gl.ARRAY_BUFFER, 0, len(self.Vertices)*4, gl.Ptr(self.Vertices))
 
 		gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, nil)
 

@@ -22,6 +22,7 @@ type App struct {
 	logger         *log.Logger
 	ecs            *entity.ECS
 	renderer       *render.Renderer
+	window         *glfw.Window
 }
 
 func NewApp(name string, ecsCap int) *App {
@@ -63,6 +64,7 @@ func (app *App) Init() (*glfw.Window, error) {
 
 
 	window, err := glfw.CreateWindow(WindowWidth, WindowHeight, app.name, nil, nil)
+	app.window = window
 
 	if err != nil {
 		panic(err)
