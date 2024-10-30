@@ -4,6 +4,7 @@ import (
 	"github.com/RoaringBitmap/roaring/roaring64"
 	"github.com/go-gl/gl/v4.5-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/phdavis1027/goecs/entity"
 )
 
@@ -97,9 +98,12 @@ func (self *Renderer) RenderLogic(
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 		gl.UseProgram(self.Program)
 		
-		resLoc := gl.GetUniformLocation(self.Program, gl.Str("res\000"))
+		/// resLoc := gl.GetUniformLocation(self.Program, gl.Str("res\000"))
 
-		gl.Uniform3f( resLoc, float32(w), float32(h), 0.0)
+		/// gl.Uniform3f( resLoc, float32(w), float32(h), 0.0)
+
+		orth := mgl32.Ortho(0, float32(w), float32(h), 0, -1, 1)
+
 		gl.BindVertexArray(self.Vao)
 		gl.BindBuffer(gl.ARRAY_BUFFER, self.Vbo)
 		gl.BufferSubData(gl.ARRAY_BUFFER, 0, len(self.Vertices)*4, gl.Ptr(self.Vertices))
