@@ -12,7 +12,7 @@ func init() {
 }
 
 func main() {
-	defer profile.Start(profile.GoroutineProfile).Stop()
+	defer profile.Start(profile.CPUProfile).Stop()
 
 	app.NewApp("Get Rect", 100).Run()
 }

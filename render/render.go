@@ -23,12 +23,14 @@ type Renderer struct {
 	Vao      uint32
 	Vbo      uint32
 	Program  uint32
+	camera   *OrthographicCamera
 }
 
 func NewRenderer() *Renderer {
 	return &Renderer{
 		Vertices: make([]float32, 12),
 		Indices:  make([]uint32, 6),
+		camera:   NewOrthographicCamera(800, 800),
 	}
 }
 
@@ -91,18 +93,33 @@ func (self *Renderer) RenderLogic(
 		window.MakeContextCurrent()	
 		glfw.PollEvents()
 
+
 		if window.GetKey(glfw.KeyEscape) == glfw.Press {
 			window.SetShouldClose(true)
+		} 
+
+		movement := mgl32.Vec3{0, 0, 0}
+
+		if (window.GetKey(glfw.KeyLeft) == glfw.Press) {
+			movement[0] = -1
+		} 
+		if (window.GetKey(glfw.KeyRight) == glfw.Press) {
+			movement[0] = 1
+		} 
+		if (window.GetKey(glfw.KeyUp) == glfw.Press) {
+			movement[1] = -1
+		} 
+		if (window.GetKey(glfw.KeyDown) == glfw.Press) {
+			movement[1] = 1
 		}
+
+		self.camera.ApplyMovement(movement)
 
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 		gl.UseProgram(self.Program)
 		
-		/// resLoc := gl.GetUniformLocation(self.Program, gl.Str("res\000"))
-
-		/// gl.Uniform3f( resLoc, float32(w), float32(h), 0.0)
-
-		orth := mgl32.Ortho(0, float32(w), float32(h), 0, -1, 1)
+		mvpLoc := gl.GetUniformLocation(self.Program, gl.Str("mvp\000"))
+		gl.UniformMatrix4fv(mvpLoc, 1, false, &self.camera.ViewProjectionMatrix[0])
 
 		gl.BindVertexArray(self.Vao)
 		gl.BindBuffer(gl.ARRAY_BUFFER, self.Vbo)

@@ -9,8 +9,8 @@ type OrthographicCamera struct {
 	Position             mgl32.Vec3
 }
 
-func NewOrthographicCamera(left, right, bottom, top float32) *OrthographicCamera {
-	projection := mgl32.Ortho(left, right, bottom, top, -1, 1)
+func NewOrthographicCamera(width, height float32) *OrthographicCamera {
+	projection := mgl32.Ortho(0, width, height, 0, 0, 400)
 	return &OrthographicCamera{
 		ProjectionMatrix: projection,
 		ViewMatrix:      mgl32.Ident4(),
@@ -23,7 +23,12 @@ func (c *OrthographicCamera) SetPosition(position mgl32.Vec3) {
 	c.UpdateViewMatrix()
 }
 
+func (c *OrthographicCamera) ApplyMovement(translation mgl32.Vec3) {
+	c.SetPosition(c.Position.Add(translation))
+}
+
 func (c *OrthographicCamera) UpdateViewMatrix() {
-	c.ViewMatrix = mgl32.Translate3D(-c.Position[0], -c.Position[1], -c.Position[2])
-	c.ViewProjectionMatrix = c.ProjectionMatrix.Mul4(c.ViewMatrix)
+    tranform := mgl32.Translate3D(c.Position[0], c.Position[1], c.Position[2])
+	inv := tranform.Inv()
+	c.ViewProjectionMatrix = c.ProjectionMatrix.Mul4(inv)
 }
