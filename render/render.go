@@ -1,6 +1,9 @@
 package render
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/RoaringBitmap/roaring/roaring64"
 	"github.com/go-gl/gl/v4.5-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
@@ -30,7 +33,7 @@ func NewRenderer() *Renderer {
 	return &Renderer{
 		Vertices: make([]float32, 12),
 		Indices:  make([]uint32, 6),
-		camera:   NewOrthographicCamera(800, 800),
+		camera:   NewOrthographicCamera(800.0, 800.0, 1.0),
 	}
 }
 
@@ -72,6 +75,8 @@ func (self *Renderer) RenderLogic(
 	entitiesMut []roaring64.Bitmap) {
 
 	DoOn(workQueue, func() {
+		now := time.Now()
+
 		h, w := window.GetSize()
 
 		self.Vertices[0]  = float32(w/2.0 - w/4.0)
@@ -113,7 +118,10 @@ func (self *Renderer) RenderLogic(
 			movement[1] = 1
 		}
 
-		self.camera.ApplyMovement(movement)
+		self.camera = NewOrthographicCamera(float32(w), float32(h), float32(h) / float32(w))
+
+		cameraSpeed := float32(2)
+		self.camera.ApplyMovement(movement.Mul(cameraSpeed))
 
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 		gl.UseProgram(self.Program)
@@ -128,5 +136,9 @@ func (self *Renderer) RenderLogic(
 		gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, nil)
 
 		window.SwapBuffers()
+
+		glfw.PollEvents()
+
+		fmt.Println("Frame Time: ", time.Since(now))
 	})
 }

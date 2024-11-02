@@ -9,8 +9,8 @@ type OrthographicCamera struct {
 	Position             mgl32.Vec3
 }
 
-func NewOrthographicCamera(width, height float32) *OrthographicCamera {
-	projection := mgl32.Ortho(0, width, height, 0, 0, 400)
+func NewOrthographicCamera(width, height, resolution float32) *OrthographicCamera {
+	projection := mgl32.Ortho(0, width, height, 0, 0, resolution)
 	return &OrthographicCamera{
 		ProjectionMatrix: projection,
 		ViewMatrix:      mgl32.Ident4(),

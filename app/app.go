@@ -51,7 +51,6 @@ func (app *App) Main(stopButton chan(struct {})) error {
 }
 
 func (app *App) Init() (*glfw.Window, error) {
-	// initialize GL
 	err := glfw.Init()
 	if err != nil {
 		panic(err)
@@ -62,20 +61,18 @@ func (app *App) Init() (*glfw.Window, error) {
 	glfw.WindowHint(glfw.ContextVersionMinor, 5)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 
-
 	window, err := glfw.CreateWindow(WindowWidth, WindowHeight, app.name, nil, nil)
-	app.window = window
-
 	if err != nil {
 		panic(err)
 	}
+	app.window = window
+
 	window.MakeContextCurrent()
 	window.SetFramebufferSizeCallback(func(w *glfw.Window, width, height int) {	
 		gl.Viewport(0, 0, int32(width), int32(height))
 	})
 
 	err = gl.Init()
-
 	if err != nil {
 		panic(err)
 	}

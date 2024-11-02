@@ -18,6 +18,7 @@ type SystemHandle int
 
 const (
 	TILE EntityType = iota
+	LEVEL 
 )
 
 func (entity Entity) Index() int {
@@ -34,13 +35,113 @@ type ECS struct {
 	genAlloc 	      GenAllocator
 
 	// Add entities here
-	layerComponent    GenArray[int]
+	layerComponent          GenArray[int]
+	tileMapComponent        GenArray[TileMapComponent]
+	positionComponent       GenArray[PositionComponent]
+	renderableQuadComponent GenArray[RenderableQuadComponent]
+
 
 	entities          [256]roaring64.Bitmap
 	dirtyMap          [256]bool
 
 	Systems           graph.Graph[string, *System]
 	numSystems        int
+}
+
+func (ecs *ECS) AttachRenderableQuadComponent(entity Entity, entityType EntityType) error {
+	if !ecs.isValidEntryOfType(entityType, entity) {
+		return fmt.Errorf("invalid entity")
+	}
+
+	err := ecs.renderableQuadComponent.Set(entity, RenderableQuadComponent{})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (ecs *ECS) GetRenderableQuadComponent(entity Entity) (*RenderableQuadComponent, error) {
+	_, ok := ecs.isValidEntry(entity)
+	if !ok {
+		return nil, fmt.Errorf("invalid entity")
+	}
+
+	genIndex := GenIndex {
+		Index: entity.Index(),
+		Generation: entity.Generation(),
+	}
+
+	renderableQuadComponent, err := ecs.renderableQuadComponent.Get(genIndex)
+	if err != nil {
+		return nil, err
+	}
+
+	return renderableQuadComponent, nil
+}
+
+func (ecs *ECS) GetPositionComponent(entity Entity) (*PositionComponent, error) {
+	_, ok := ecs.isValidEntry(entity)
+	if !ok {
+		return nil, fmt.Errorf("invalid entity")
+	}
+
+	genIndex := GenIndex {
+		Index: entity.Index(),
+		Generation: entity.Generation(),
+	}
+
+	positionComponent, err := ecs.positionComponent.Get(genIndex)
+	if err != nil {
+		return nil, err
+	}
+
+	return positionComponent, nil
+}
+
+func (ecs *ECS) AttachPositionComponent(entity Entity, entityType EntityType) error {
+	if !ecs.isValidEntryOfType(entityType, entity) {
+		return fmt.Errorf("invalid entity")
+	}
+
+	err := ecs.positionComponent.Set(entity, PositionComponent{})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (ecs *ECS) GetTileMapComponent(entity Entity) (*TileMapComponent, error) {
+	_, ok := ecs.isValidEntry(entity)
+	if !ok {
+		return nil, fmt.Errorf("invalid entity")
+	}
+
+	genIndex := GenIndex {
+		Index: entity.Index(),
+		Generation: entity.Generation(),
+	}
+
+	tileMapComponent, err := ecs.tileMapComponent.Get(genIndex)
+	if err != nil {
+		return nil, err
+	}
+
+	return tileMapComponent, nil
+}
+
+func (ecs *ECS) AttachTileMapComponent(entity Entity, entityType EntityType) error {
+	if !ecs.isValidEntryOfType(entityType, entity) {
+		return fmt.Errorf("invalid entity")
+	}
+
+	err := ecs.tileMapComponent.Set(entity, TileMapComponent{})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (ecs *ECS) AttachLayerComponent(entity Entity, entityType EntityType) error {
@@ -74,13 +175,14 @@ type DSetEntry struct {
 func (ecs *ECS) RunSchedule() error {
 	quitter := make(chan struct{})
 
+	// Main loop, one game tick
 	for {
+
 		select {
 		case <-quitter:
 			break
 		default:
 			{
-
 				n := ecs.numSystems
 
 
@@ -132,6 +234,7 @@ func (ecs *ECS) RunSchedule() error {
 
 			} // default
 		} // select
+
 	} // for (infinite loop)
 }
 
