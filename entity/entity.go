@@ -3,12 +3,10 @@ package entity
 import (
 	// Local libs
 	"fmt"
-	"os"
 	"sync"
 
 	"github.com/RoaringBitmap/roaring/roaring64"
 	"github.com/dominikbraun/graph"
-	"github.com/dominikbraun/graph/draw"
 )
 
 type Entity int64
@@ -250,7 +248,7 @@ func (ecs *ECS) RunSchedule() error {
 	} // for (infinite loop)
 }
 
-func (ecs *ECS) CompileSchedule(debug bool) error {
+func (ecs *ECS) CompileSchedule() error {
 	// Algorithm 1 from Yao et al
 	// iterate over all vertices
 	adjMap, err := ecs.Systems.AdjacencyMap()
@@ -339,12 +337,6 @@ func (ecs *ECS) CompileSchedule(debug bool) error {
 		} // for mutQuery
 	} // for q
 
-	if debug {
-		file, _ := os.Create("debug.txt")
-		defer file.Close()
-		draw.DOT(ecs.Systems, file)
-	}
-
 	return nil
 }
 
@@ -369,7 +361,7 @@ func (ecs *ECS) RegisterMutQueries(system string, queries ...EntityType) error {
 	return nil
 }
 
-func (ecs *ECS) ScheduleManualDependency(before, after string) error {
+func (ecs *ECS) ScheduleBefore(before, after string) error {
 	return ecs.Systems.AddEdge(before, after)
 }
 
