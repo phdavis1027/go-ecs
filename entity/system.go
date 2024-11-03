@@ -21,6 +21,7 @@ type System struct {
 	// - ecs.DestroyEntity
 	// - ecs.CreateEntity
 	CustumOnTick    SystemFunc
+	Mailboxes       *Mailboxes
 }
 
 func (s *System) AddIfMatches(e Entity, et EntityType) {

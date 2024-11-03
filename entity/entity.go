@@ -13,9 +13,9 @@ import (
 
 type Entity int64
 
-type EntityType uint8
 type SystemHandle int
 
+type EntityType uint8
 const (
 	TILE EntityType = iota
 	LEVEL 
@@ -46,6 +46,17 @@ type ECS struct {
 
 	Systems           graph.Graph[string, *System]
 	numSystems        int
+}
+
+func (ecs *ECS) SendEvent(systemName string, event Event, priority EventPriority) error {
+	sys, err := ecs.Systems.Vertex(systemName)
+	if err != nil {
+		return err
+	}
+
+	sys.Mailboxes.SendToPriority(priority, event)
+
+	return nil
 }
 
 func (ecs *ECS) AttachRenderableQuadComponent(entity Entity, entityType EntityType) error {
@@ -162,6 +173,7 @@ func (ecs *ECS) RegisterSystem(name string, cb SystemFunc) {
 
 	system.name = name
 	system.CustumOnTick = cb
+	system.Mailboxes = NewMailboxesWithCapacity(100)
 
 	ecs.Systems.AddVertex(system)
 	ecs.numSystems++
